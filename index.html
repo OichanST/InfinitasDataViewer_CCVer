@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INFINITAS Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kdam+Thmor+Pro&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <h1>INFINITAS <span>Viewer</span></h1>
+  <button type="button" class="user" id="userBtn" title="表示するDJを切り替える"><span id="userName">-</span></button>
+  <span class="sync" id="sync"></span>
+  <button type="button" class="icon" id="rivalBtn" title="ライバル">ライバル</button>
+  <button type="button" class="icon" id="reloadBtn" title="最新のデータを取得する">↻</button>
+</header>
+
+<!-- ログイン -->
+<section class="login" id="login" hidden>
+  <form id="loginForm">
+    <h2>DJ NAME</h2>
+    <p class="hint">Google スプレッドシートに登録しているDJ NAMEを入力してください。</p>
+    <input id="loginId" autocomplete="username" required>
+    <div class="row">
+      <button type="submit" class="primary">表示する</button>
+      <button type="button" id="guestBtn">楽曲だけ見る</button>
+    </div>
+    <p class="err" id="loginErr"></p>
+  </form>
+</section>
+
+<main id="app" hidden>
+  <section class="filters" id="filters">
+    <div class="frow">
+      <div class="seg" id="styleSeg" role="radiogroup" aria-label="プレイスタイル">
+        <button type="button" data-v="SP">SP</button><button type="button" data-v="DP">DP</button>
+      </div>
+      <span class="flabel">LV</span><div class="chips levels" id="levelChips" aria-label="レベル"></div>
+      <span class="flabel">譜面</span><div class="chips diffs" id="diffChips" aria-label="難易度"></div>
+    </div>
+    <div class="frow">
+      <input type="search" id="q" placeholder="曲名・アーティスト・ジャンルで絞り込み">
+      <select id="sort" aria-label="並べ替え">
+        <option value="level">レベル順</option>
+        <option value="title">曲名順</option>
+        <option value="lamp">クリアランプ順</option>
+        <option value="rate">スコアレート順</option>
+        <option value="miss">ミスカウント順</option>
+        <option value="bpm">BPM順</option>
+        <option value="notes">ノーツ数順</option>
+        <option value="rival" hidden>ライバルとの差順</option>
+      </select>
+      <button type="button" class="dir" id="dirBtn" title="昇順/降順">▲</button>
+      <button type="button" class="more" id="moreBtn" aria-expanded="false">条件 <span id="moreCount"></span></button>
+    </div>
+    <div class="frow extra" id="extra" hidden>
+      <label>バージョン <select id="folder"><option value="">すべて</option></select></label>
+      <label>CN/BSS <select id="cn"><option value="">すべて</option><option value="cn">あり</option><option value="none">なし</option></select></label>
+      <label class="chk"><input type="checkbox" id="hideLocked"> 未解禁を表示しない</label>
+      <span class="presets">ランプ:
+        <button type="button" data-preset="noclear">未クリア</button>
+        <button type="button" data-preset="nohard">未HARD</button>
+        <button type="button" data-preset="noexh">未EXH</button>
+        <button type="button" data-preset="nofc">未FC</button>
+      </span>
+      <label id="rivalFilterBox" hidden>ライバル
+        <select id="rivalSel"></select>
+        <select id="rivalResult"><option value="">勝敗すべて</option><option value="win">勝ち</option><option value="lose">負け</option><option value="draw">引き分け</option></select>
+      </label>
+      <button type="button" class="link" id="resetBtn">条件をリセット</button>
+    </div>
+  </section>
+
+  <section class="summary" id="summary">
+    <div class="sumhead"><b id="total">0</b> 譜面 <span class="muted" id="sumNote"></span></div>
+    <div class="dist" id="lampDist"></div>
+    <div class="dist" id="gradeDist"></div>
+    <div class="rivalsum" id="rivalSum"></div>
+  </section>
+
+  <section class="list" id="list" aria-live="polite"></section>
+  <div id="sentinel"></div>
+  <p class="empty" id="empty" hidden>条件に合う譜面がありません。</p>
+</main>
+
+<!-- 曲の詳細 -->
+<dialog id="detail"><div id="detailBody"></div><form method="dialog"><button class="close" aria-label="閉じる">×</button></form></dialog>
+
+<!-- ライバル -->
+<dialog id="rivalDlg">
+  <h2>ライバル</h2>
+  <p class="hint">DJ NAMEを追加すると、一覧にEXスコアの差と勝敗が出ます。</p>
+  <ul id="rivalList"></ul>
+  <form id="rivalForm" class="row"><input id="rivalId" placeholder="DJ NAME"><button type="submit">追加</button></form>
+  <p class="err" id="rivalErr"></p>
+  <form method="dialog"><button class="close" aria-label="閉じる">×</button></form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+<div class="loading" id="loading" hidden><div class="spinner"></div><span id="loadingText">読み込み中…</span></div>
+
+<footer class="foot"><span id="version"></span></footer>
+
+<script src="js/api.js"></script>
+<script src="js/model.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
