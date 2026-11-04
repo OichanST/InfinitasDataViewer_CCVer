@@ -158,7 +158,7 @@
 	}
 
 	function rowHtml(c) {
-		const tags = [c.cn, c.bss].filter(Boolean).map((t) => `<span class="tag ${esc(t)}">${esc(t)}</span>`).join("");
+		const tags = [c.cn, c.bss, c.soflan].filter(Boolean).map((t) => `<span class="tag ${esc(t)}">${esc(t)}</span>`).join("");
 		const lampName = c.lamp === M.LOCKED ? "未解禁" : c.lamp;
 		let score = `<span class="lampname">${esc(lampName)}</span>`;
 		if (c.played) {
@@ -258,7 +258,7 @@
 		const rows = same.map((x) => {
 			const rv = x.rivals.map((r) => `<td class="num">${r.played ? `${r.ex}${r.diff != null ? ` <span class="${r.diff > 0 ? "w" : r.diff < 0 ? "l" : "d"}">(${r.diff > 0 ? "+" : ""}${r.diff})</span>` : ""}` : "-"}</td>`).join("");
 			return `<tr class="${x.id === c.id ? "cur" : ""}" style="--dc:var(--d-${x.diff})">
-				<td class="lvcell">${M.DIFF_NAMES[x.diff]} ${x.level}${[x.cn, x.bss].filter(Boolean).map((t) => ` <span class="tag ${esc(t)}">${esc(t)}</span>`).join("")}</td>
+				<td class="lvcell">${M.DIFF_NAMES[x.diff]} ${x.level}${[x.cn, x.bss, x.soflan].filter(Boolean).map((t) => ` <span class="tag ${esc(t)}">${esc(t)}</span>`).join("")}</td>
 				<td class="num">${x.notes}</td><td class="num">${esc(x.bpm)}</td>
 				<td style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>
 				<td class="num">${x.played ? `${x.grade} ${x.ex}` : "-"}</td>

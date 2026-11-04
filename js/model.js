@@ -80,6 +80,8 @@ IV.model = (() => {
 						title: song.TITLE, artist: song.ARTIST || "", genre: song.GENRE || "", folder: song.FOLDER || "", pkg,
 						level: Number(c.DIFFICULT), notes: Number(c.NOTES) || 0,
 						cn: c.CN || "", bss: c.BSS || "",
+						// BPM に "-" があれば（例: 150-300）ソフラン曲
+						soflan: String(bpm).includes("-") ? "SOF-LAN" : "",
 						bpm, bpmNum: bpmValue(bpm),
 						open, lamp, lampIdx: LAMPS.indexOf(lamp), played,
 						ex, miss: played && r.MISSCOUNT !== "" && r.MISSCOUNT != null && r.MISSCOUNT !== "-" ? Number(r.MISSCOUNT) : null,

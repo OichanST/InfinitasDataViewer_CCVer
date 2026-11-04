@@ -99,6 +99,7 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .tag.CN, .tag.BSS { color: #ffe14d; border: 1px solid #ffe14d; }
 .tag.HCN, .tag.HBSS { color: #ff6b6b; border: 1px solid #ff6b6b; }
 .tag.MSS { color: #c9a7ff; border: 1px solid #c9a7ff; }
+.tag.SOF-LAN { color: #4fd8ff; border: 1px solid #4fd8ff; }
 .item .score { display: grid; grid-template-columns: auto 11em; gap: 0 10px; align-items: center; text-align: right; }
 .grade { font-size: 18px; min-width: 2.4em; text-align: center; color: var(--gc); }
 .ex { font-size: 15px; }
