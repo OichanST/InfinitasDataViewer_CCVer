@@ -51,11 +51,27 @@ IV.model = (() => {
 
 	const norm = (s) => String(s || "").normalize("NFKC").toLowerCase();
 
+	// バージョンフォルダ（ゲームの並び順）。substream は 1st と 2nd の間、INFINITAS は最後
+	const FOLDERS = ["IIDX", "substream", "2nd style", "3rd style", "4th style", "5th style", "6th style", "7th style", "8th style", "9th style", "10th style",
+		"RED", "HAPPY SKY", "DistorteD", "GOLD", "DJ TROOPERS", "EMPRESS", "SIRIUS", "Resort Anthem", "Lincle", "tricoro", "SPADA", "PENDUAL", "copula",
+		"SINOBUZ", "CANNON BALLERS", "Rootage", "HEROIC VERSE", "BISTROVER", "Cast Hour", "RESIDENT", "EPOLIS", "Pinky Crush", "Sparkle Shower", "INFINITAS"];
+	const folderKey = (s) => String(s || "").toLowerCase().replace(/\s+/g, "");
+	const FOLDER_BY_KEY = new Map(FOLDERS.map((f) => [folderKey(f), f]));
+	/** フォルダ名の表記ゆれ（"CastHour" / "5th Style" など）をそろえる */
+	const normFolder = (s) => FOLDER_BY_KEY.get(folderKey(s)) || String(s || "");
+	/** フォルダの並び順（知らないフォルダは最後に名前順） */
+	const folderOrder = (a, b) => {
+		const ia = FOLDERS.indexOf(a), ib = FOLDERS.indexOf(b);
+		return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a.localeCompare(b);
+	};
+
 	/**
 	 * 一覧を作る。results は自分のリザルト（なければ null）、rivals は { id, results } の配列。
 	 */
-	function build(music, results, rivals) {
+	function build(music, results, rivals, radarMap, abilityMap) {
 		const resByTitle = new Map((results || []).map((r) => [r.TITLE, r]));
+		radarMap = radarMap || new Map();
+		abilityMap = abilityMap || new Map();
 		const rivalMaps = (rivals || []).map((rv) => ({ id: rv.id, map: new Map((rv.results || []).map((r) => [r.TITLE, r])) }));
 		const charts = [];
 		for (const song of music.musicList) {
@@ -77,7 +93,7 @@ IV.model = (() => {
 					const row = {
 						id: `${key}|${song.TITLE}`,
 						song, key, style, diff: d,
-						title: song.TITLE, artist: song.ARTIST || "", genre: song.GENRE || "", folder: song.FOLDER || "", pkg,
+						title: song.TITLE, artist: song.ARTIST || "", genre: song.GENRE || "", folder: normFolder(song.FOLDER), pkg,
 						level: Number(c.DIFFICULT), notes: Number(c.NOTES) || 0,
 						cn: c.CN || "", bss: c.BSS || "",
 						// BPM に "-" があれば（例: 150-300）ソフラン曲
@@ -88,6 +104,8 @@ IV.model = (() => {
 						grade: g.grade, gradeDetail: g.detail, rate: g.rate,
 						mv: /^https?:\/\//.test(r.MV || "") ? r.MV : "",
 						searchText,
+						radar: radarMap.get(song.TITLE + "|" + key) || null,
+						ability: abilityMap.get(song.TITLE + "|" + key) || abilityMap.get("~" + looseTitle(song.TITLE) + "|" + key) || null,
 						rivals: [],
 					};
 					for (const rv of rivalMaps) {
@@ -118,9 +136,6 @@ IV.model = (() => {
 			if (f.hideLocked && !c.open) return false;
 			if (except !== "lamp" && f.lamps.size && !f.lamps.has(c.lamp)) return false;
 			if (except !== "grade" && f.grades.size && !f.grades.has(c.grade)) return false;
-			if (f.folder && c.folder !== f.folder) return false;
-			if (f.cn === "cn" && !c.cn && !c.bss) return false;
-			if (f.cn === "none" && (c.cn || c.bss)) return false;
 			if (f.rival && f.rivalResult) {
 				const rv = c.rivals.find((r) => r.id === f.rival);
 				if (!rv || rv.diff == null) return false;
@@ -146,6 +161,12 @@ IV.model = (() => {
 			miss: (a, b) => (a.miss ?? 1e9) - (b.miss ?? 1e9),
 			bpm: (a, b) => a.bpmNum - b.bpmNum,
 			notes: (a, b) => a.notes - b.notes,
+			radarNotes: (a, b) => (a.radar?.NOTES ?? -1) - (b.radar?.NOTES ?? -1),
+			radarPeak: (a, b) => (a.radar?.PEAK ?? -1) - (b.radar?.PEAK ?? -1),
+			radarScratch: (a, b) => (a.radar?.SCRATCH ?? -1) - (b.radar?.SCRATCH ?? -1),
+			radarSoflan: (a, b) => (a.radar?.["SOF-LAN"] ?? -1) - (b.radar?.["SOF-LAN"] ?? -1),
+			radarCharge: (a, b) => (a.radar?.CHARGE ?? -1) - (b.radar?.CHARGE ?? -1),
+			radarChord: (a, b) => (a.radar?.CHORD ?? -1) - (b.radar?.CHORD ?? -1),
 			rival: (a, b) => {
 				const da = (a.rivals.find((r) => r.id === rivalId) || {}).diff;
 				const db = (b.rivals.find((r) => r.id === rivalId) || {}).diff;
@@ -180,5 +201,148 @@ IV.model = (() => {
 		});
 	}
 
-	return { DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, grade, build, filter, sort, summarize, rivalSummary };
+	/** ノーツレーダーの一覧を "曲名|SPA" のようなキーで引けるMapにする */
+	function radarMap(list) {
+		return new Map((list || []).map((r) => [r.TITLE + "|" + r.TYPE, r]));
+	}
+
+	/**
+	 * 表記ゆれを吸収した曲名（アクセント記号・全角/半角・記号・空白・大文字小文字を無視）。
+	 * 地力表は「Ubertreffen」「［ ］DENTITY」のように INFINITAS と表記が違う曲があるため
+	 */
+	const looseTitle = (s) => String(s ?? "").normalize("NFKD").replace(/\p{M}/gu, "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+
+	/** 地力表(AbilitySheet)の一覧を "曲名|SPA" のようなキーで引けるMapにする（表記ゆれ用に "~ゆるい曲名|SPA" も登録） */
+	function abilityMap(list) {
+		const map = new Map();
+		for (const r of list || []) {
+			map.set(r.TITLE + "|" + r.TYPE, r);
+			// 記号だけの曲名（∀ や ≡+≡）はゆるい曲名が空になり別の曲と一致してしまうので登録しない
+			const lt = looseTitle(r.TITLE);
+			if (!lt) continue;
+			const loose = "~" + lt + "|" + r.TYPE;
+			if (!map.has(loose)) map.set(loose, r);
+		}
+		return map;
+	}
+
+	// 地力表のランク（上から）。「地力」と「個人差」は別グループにし、同じランクなら地力→個人差の順
+	const ABILITY_RANKS = ["S+", "S", "A+", "A", "B+", "B", "C", "D", "E", "F"];
+	const ABILITY_GOAL = { nomage: "EASY CLEAR", hard: "HARD CLEAR" };
+
+	/**
+	 * 地力表のグループを作る。mode は "nomage"（EASY 以上で達成）か "hard"（HARD 以上で達成）。
+	 * 戻り値: [{ tier: "地力S+", items: [譜面], done: 達成数 }]（譜面は曲名順。「未定」などは最後）
+	 */
+	function abilityGroups(charts, mode) {
+		const col = mode === "hard" ? "HARD_TIER" : "NOMAGE_TIER";
+		const goal = LAMPS.indexOf(ABILITY_GOAL[mode] || ABILITY_GOAL.nomage);
+		const order = [...ABILITY_RANKS.flatMap((r) => ["地力" + r, "個人差" + r]), "未定", "未設定"];
+		const groups = new Map();
+		for (const c of charts) {
+			// 地力表に無い SP☆12 譜面は「未設定」として最後に出す
+			if (!c.ability && !(c.style === "SP" && c.level === 12)) continue;
+			const tier = c.ability ? String(c.ability[col] || "").trim() || "未定" : "未設定";
+			if (!groups.has(tier)) groups.set(tier, []);
+			groups.get(tier).push(c);
+		}
+		const rank = (t) => (order.includes(t) ? order.indexOf(t) : order.length);
+		return [...groups.entries()]
+			.sort((a, b) => rank(a[0]) - rank(b[0]) || collator.compare(a[0], b[0]))
+			.map(([tier, items]) => ({
+				tier,
+				items: items.sort((a, b) => collator.compare(sortTitle(a), sortTitle(b)) || DIFFS.indexOf(a.diff) - DIFFS.indexOf(b.diff)),
+				done: items.filter((c) => c.lampIdx >= goal).length,
+			}));
+	}
+
+	const RADAR_FIELDS = ["NOTES", "PEAK", "SCRATCH", "SOF-LAN", "CHARGE", "CHORD"];
+	/**
+	 * プレイヤーのノーツレーダー。項目ごとに「譜面のレーダー値 × スコアレート（EX ÷ (ノーツ数×2)）」を計算し、
+	 * 上位10譜面の平均をその項目の値にする（SP/DP は別々に計算）。
+	 * 戻り値: { NOTES: { value, top: [{ c, radar, rate, score }] }, … }
+	 */
+	function playerRadar(charts, style, n = 10) {
+		const played = charts.filter((c) => c.style === style && c.played && c.radar && c.notes > 0);
+		const out = {};
+		for (const f of RADAR_FIELDS) {
+			const list = played
+				.map((c) => { const radar = Number(c.radar[f]) || 0; return { c, radar, rate: c.rate, score: radar * c.rate }; })
+				.filter((x) => x.score > 0)
+				.sort((a, b) => b.score - a.score)
+				.slice(0, n);
+			out[f] = { value: list.length ? list.reduce((s, x) => s + x.score, 0) / n : 0, top: list };
+		}
+		return out;
+	}
+
+	/**
+	 * ノーツレーダーを伸ばすためのおすすめ譜面。
+	 * 「そのレベルでいつも出しているスコアレート（プレイ済み譜面の中央値。自己ベストの方が高ければそちら）」で遊んだと仮定し、
+	 * 今の10位（ボーダー）を超えて項目の値がどれだけ上がるかを見積もって、上がり幅の大きい順に並べる。未解禁の譜面は除く。
+	 * 戻り値: { NOTES: { border, list: [{ c, radar, expRate, needRate, gain }] }, … }
+	 */
+	function radarRecommend(charts, style, pr, n = 5) {
+		const mine = charts.filter((c) => c.style === style && c.open && c.radar && c.notes > 0);
+		const byLevel = new Map();
+		for (const c of mine) if (c.played) {
+			if (!byLevel.has(c.level)) byLevel.set(c.level, []);
+			byLevel.get(c.level).push(c.rate);
+		}
+		const median = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+		const allRates = [...byLevel.values()].flat();
+		const typical = (lv) => (byLevel.get(lv)?.length >= 3 ? median(byLevel.get(lv)) : median(allRates));
+		const out = {};
+		for (const f of RADAR_FIELDS) {
+			const top = pr[f].top;
+			const border = top.length < 10 ? 0 : top[top.length - 1].score;
+			const inTop = new Set(top.map((x) => x.c.id));
+			const list = [];
+			for (const c of mine) {
+				if (inTop.has(c.id)) continue;
+				const radar = Number(c.radar[f]) || 0;
+				if (!radar) continue;
+				const expRate = Math.max(c.played ? c.rate : 0, typical(c.level));
+				const exp = radar * expRate;
+				if (exp <= border) continue;
+				list.push({ c, radar, expRate, needRate: border / radar, gain: (exp - border) / 10 });
+			}
+			list.sort((a, b) => b.gain - a.gain);
+			out[f] = { border, list: list.slice(0, n) };
+		}
+		return out;
+	}
+
+	/**
+	 * クリア済み（EASY CLEAR 以上）の譜面の EX スコアを伸ばして10位に入れる候補。
+	 * 「あと EX スコアを何点伸ばせば10位（ボーダー）を超えるか」が少ない順に並べる。
+	 * 戻り値: { NOTES: { border, list: [{ c, radar, needRate, needEx }] }, … }
+	 */
+	function radarRecommendScore(charts, style, pr, n = 5) {
+		const easy = LAMPS.indexOf("EASY CLEAR");
+		const cleared = charts.filter((c) => c.style === style && c.played && c.lampIdx >= easy && c.radar && c.notes > 0);
+		const out = {};
+		for (const f of RADAR_FIELDS) {
+			const top = pr[f].top;
+			const border = top.length < 10 ? 0 : top[top.length - 1].score;
+			const inTop = new Set(top.map((x) => x.c.id));
+			const list = [];
+			for (const c of cleared) {
+				if (inTop.has(c.id)) continue;
+				const radar = Number(c.radar[f]) || 0;
+				if (!radar) continue;
+				const needRate = border / radar;
+				if (needRate > 1) continue; // MAX でも届かない
+				// ボーダーを「超える」のに必要な EX スコア（同点では入れ替わらない）
+				const needEx = Math.floor(needRate * c.notes * 2) + 1 - c.ex;
+				if (needEx <= 0 || c.ex + needEx > c.notes * 2) continue;
+				list.push({ c, radar, needRate, needEx });
+			}
+			list.sort((a, b) => a.needEx - b.needEx || b.radar - a.radar);
+			out[f] = { border, list: list.slice(0, n) };
+		}
+		return out;
+	}
+
+	return { DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups };
 })();

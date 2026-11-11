@@ -6,7 +6,7 @@
 <title>INFINITAS Viewer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Kdam+Thmor+Pro&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kdam+Thmor+Pro&family=Saira+Semi+Expanded:wght@500;600&family=M+PLUS+1p:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -33,6 +33,38 @@
 </section>
 
 <main id="app" hidden>
+  <nav class="tabs" id="viewTabs" role="tablist">
+    <button type="button" role="tab" data-view="list">一覧</button><button type="button" role="tab" data-view="folder">バージョン</button><button type="button" role="tab" data-view="ability">地力表 (SP☆12)</button><button type="button" role="tab" data-view="radar">レーダー</button>
+  </nav>
+
+  <!-- プレイヤーのノーツレーダー -->
+  <section class="pradar" id="radarView" hidden>
+    <div class="frow">
+      <div class="seg" id="radarStyleSeg" role="radiogroup" aria-label="プレイスタイル">
+        <button type="button" data-v="SP">SP</button><button type="button" data-v="DP">DP</button>
+      </div>
+      <span class="muted" style="font-size:12px">各項目「譜面のレーダー値 × スコアレート」の上位10譜面の平均</span>
+      <span class="flabel" style="margin-left:auto">伸ばすなら</span>
+      <div class="seg" id="recModeSeg" role="radiogroup" aria-label="おすすめの出し方">
+        <button type="button" data-v="rate" title="そのレベルでいつも出しているレートで遊んだ場合に上がる譜面">いつものレート</button><button type="button" data-v="score" title="クリア済みの譜面で、あと何点伸ばせば上がるか">クリア済みのスコアアップ</button>
+      </div>
+    </div>
+    <div id="radarBody"></div>
+  </section>
+
+  <!-- 地力表 -->
+  <section class="ability" id="abilityView" hidden>
+    <div class="frow">
+      <div class="seg" id="abModeSeg" role="radiogroup" aria-label="地力表の種類">
+        <button type="button" data-v="nomage">ノマゲ</button><button type="button" data-v="hard">ハード</button>
+      </div>
+      <span class="muted" id="abTotal"></span>
+    </div>
+    <div id="abGroups"></div>
+    <p class="empty" id="abEmpty" hidden>地力表のデータがありません。</p>
+  </section>
+
+  <div id="listView">
   <section class="filters" id="filters">
     <div class="frow">
       <div class="seg" id="styleSeg" role="radiogroup" aria-label="プレイスタイル">
@@ -51,14 +83,18 @@
         <option value="miss">ミスカウント順</option>
         <option value="bpm">BPM順</option>
         <option value="notes">ノーツ数順</option>
+        <option value="radarNotes">レーダーNOTES順</option>
+        <option value="radarPeak">レーダーPEAK順</option>
+        <option value="radarScratch">レーダーSCRATCH順</option>
+        <option value="radarSoflan">レーダーSOF-LAN順</option>
+        <option value="radarCharge">レーダーCHARGE順</option>
+        <option value="radarChord">レーダーCHORD順</option>
         <option value="rival" hidden>ライバルとの差順</option>
       </select>
       <button type="button" class="dir" id="dirBtn" title="昇順/降順">▲</button>
       <button type="button" class="more" id="moreBtn" aria-expanded="false">条件 <span id="moreCount"></span></button>
     </div>
     <div class="frow extra" id="extra" hidden>
-      <label>バージョン <select id="folder"><option value="">すべて</option></select></label>
-      <label>CN/BSS <select id="cn"><option value="">すべて</option><option value="cn">あり</option><option value="none">なし</option></select></label>
       <label class="chk"><input type="checkbox" id="hideLocked"> 未解禁を表示しない</label>
       <span class="presets">ランプ:
         <button type="button" data-preset="noclear">未クリア</button>
@@ -74,6 +110,9 @@
     </div>
   </section>
 
+  <!-- バージョン（フォルダ）一覧。押すとその下に曲を開く -->
+  <section class="folders" id="folderView" hidden></section>
+
   <section class="summary" id="summary">
     <div class="sumhead"><b id="total">0</b> 譜面 <span class="muted" id="sumNote"></span></div>
     <div class="dist" id="lampDist"></div>
@@ -84,6 +123,7 @@
   <section class="list" id="list" aria-live="polite"></section>
   <div id="sentinel"></div>
   <p class="empty" id="empty" hidden>条件に合う譜面がありません。</p>
+  </div>
 </main>
 
 <!-- 曲の詳細 -->

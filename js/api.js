@@ -60,6 +60,8 @@ IV.api = (() => {
 	return {
 		loadMusic: (onData, opts) => load("music", { type: "getMusicData" }, onData, opts),
 		loadResult: (id, onData, opts) => load("result:" + id, { type: "getPlayResult", id }, onData, opts),
+		loadRadar: (onData, opts) => load("radar", { type: "getRadarData" }, onData, opts),
+		loadAbility: (onData, opts) => load("ability", { type: "getAbilityData" }, onData, opts),
 		checkUser: async (id) => !!(await get({ type: "checkUser", id })).result,
 		clearCache() {
 			Object.keys(localStorage).filter((k) => k.startsWith(PREFIX)).forEach((k) => localStorage.removeItem(k));

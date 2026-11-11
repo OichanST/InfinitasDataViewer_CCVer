@@ -1,11 +1,13 @@
 :root {
-  --bg: #0d0f14; --panel: #161a22; --panel2: #1d2230; --line: #2a3040; --text: #e8ebf2; --muted: #8b93a7; --accent: #4fc3f7;
+  --bg: #030a22; --panel: rgba(8,16,40,.86); --panel2: rgba(18,32,66,.92); --line: #2a3e6a; --text: #e8ebf2; --muted: #8b93a7; --accent: #4fc3f7;
   --num: "Kdam Thmor Pro", "Segoe UI", system-ui, sans-serif;
+  /* 曲名: INFINITAS の選曲リストに近い、横長で角の丸い英字＋細めのゴシック */
+  --title: "Saira Semi Expanded", "M PLUS 1p", "Segoe UI", sans-serif;
   /* 難易度 */
   --d-B: #7ee36b; --d-N: #3fa9ff; --d-H: #ffc000; --d-A: #ff3b3b; --d-L: #ff3fb0;
   /* クリアランプ（ゲームの色に合わせる） */
-  --l-LOCKED: #3a3f4b; --l-NO_PLAY: #6b7280; --l-FAILED: #b3261e; --l-ASSIST_CLEAR: #c56cf0; --l-EASY_CLEAR: #46d160;
-  --l-CLEAR: #3fa9ff; --l-HARD_CLEAR: #f2f2f2; --l-EX_HARD_CLEAR: #ffd400; --l-FULL_COMBO: #7df9ff;
+  --l-LOCKED: #3a3f4b; --l-NO_PLAY: #6b7280; --l-FAILED: #8f1f19; --l-ASSIST_CLEAR: #c56cf0; --l-EASY_CLEAR: #2ce21f;
+  --l-CLEAR: #45dbfb; --l-HARD_CLEAR: #f2f2f2; --l-EX_HARD_CLEAR: #ffd400; --l-FULL_COMBO: #7df9ff;
   /* 文字色だけ変えたいランプ（バーの色はそのまま） */
   --lt-HARD_CLEAR: #ff4d4d;
   /* DJ LEVEL */
@@ -13,7 +15,20 @@
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif; }
+/* 背景: INFINITAS の選曲画面の配色（端は濃紺、中央に強い青の光、左寄りに水色の同心円、斜めの光の筋）を CSS で再現。画像は使わない */
+body { margin: 0; color: var(--text); background-color: var(--bg); background-attachment: fixed;
+  background-image:
+    /* 左寄りの同心円 */
+    radial-gradient(circle at 20% 62%, transparent 0 150px, rgba(120,210,255,.35) 151px 153px, transparent 154px 215px, rgba(120,210,255,.22) 216px 228px, transparent 229px 300px, rgba(120,210,255,.30) 301px 303px, transparent 304px 390px, rgba(90,180,255,.16) 391px 420px, transparent 421px 520px, rgba(120,210,255,.20) 521px 523px, transparent 524px),
+    /* 斜めの光の筋 */
+    linear-gradient(118deg, transparent 0 30%, rgba(90,200,255,.22) 30% 30.4%, transparent 30.4% 44%, rgba(90,200,255,.16) 44% 45.5%, transparent 45.5% 57%, rgba(120,220,255,.28) 57% 57.25%, transparent 57.25% 70%, rgba(90,200,255,.12) 70% 72%, transparent 72%),
+    linear-gradient(28deg, transparent 0 62%, rgba(90,200,255,.14) 62% 62.3%, transparent 62.3% 80%, rgba(90,200,255,.10) 80% 81.5%, transparent 81.5%),
+    /* 青い光 */
+    radial-gradient(ellipse 45% 40% at 22% 55%, rgba(60,170,255,.25), transparent 70%),
+    radial-gradient(ellipse 75% 60% at 38% 35%, rgba(24,110,215,.5), transparent 72%),
+    radial-gradient(ellipse 45% 35% at 82% 8%, rgba(8,160,225,.3), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 65% 100%, rgba(25,55,150,.5), transparent 75%);
+  font: 14px/1.5 "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
@@ -23,7 +38,7 @@ button { cursor: pointer; }
 .num, .lv, .ex, .grade { font-family: var(--num); letter-spacing: .02em; }
 
 /* ヘッダー */
-.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: rgba(13,15,20,.92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: rgba(4,10,30,.88); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
 .top h1 { margin: 0; font: 18px var(--num); letter-spacing: .08em; }
 .top h1 span { color: var(--accent); }
 .top .user { margin-left: 6px; background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; font-family: var(--num); }
@@ -42,7 +57,7 @@ button { cursor: pointer; }
 
 /* 絞り込み */
 main { max-width: 1100px; margin: 0 auto; padding: 0 12px 60px; }
-.filters { position: sticky; top: 45px; z-index: 10; background: var(--bg); padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
+.filters { position: sticky; top: 45px; z-index: 10; background: rgba(4,10,30,.85); backdrop-filter: blur(6px); padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
 .frow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .frow + .frow { margin-top: 8px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -65,6 +80,67 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .presets button[aria-pressed="true"] { border-color: var(--accent); }
 .link { background: none; border: 0; color: var(--accent); text-decoration: underline; padding: 0; }
 
+/* 一覧 / 地力表 の切り替え */
+.tabs { display: flex; gap: 4px; padding-top: 10px; border-bottom: 1px solid var(--line); }
+.tabs button { background: none; border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 4px 14px; color: var(--muted); margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--text); background: rgba(4,10,30,.85); border-color: var(--line); border-bottom: 1px solid transparent; }
+
+/* フォルダ一覧 */
+.folders { display: flex; flex-direction: column; gap: 4px; padding: 12px 0; }
+.fdRow { display: grid; grid-template-columns: minmax(0, 13em) 6em minmax(0, 1fr); align-items: center; gap: 4px 14px; width: 100%; text-align: left; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.fdRow:hover { border-color: var(--accent); }
+.fdName { font-family: var(--title); font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fdCount { color: var(--muted); font-size: 12px; } .fdCount b { color: var(--text); font-size: 15px; font-weight: normal; }
+.fdName::before { content: "▸"; display: inline-block; width: 1.1em; color: var(--muted); }
+.fdRow { scroll-margin-top: 150px; }
+.fdRow.open { border-color: var(--accent); }
+.fdRow.open .fdName::before { content: "▾"; color: var(--accent); }
+.fdList { margin: 2px 0 10px 14px; }
+.fdBar { height: 10px; } .fdBar span { cursor: inherit; }
+@media (max-width: 640px) { .fdRow { grid-template-columns: minmax(0, 1fr) auto; } .fdBar { grid-column: 1 / -1; } }
+
+/* プレイヤーのノーツレーダー */
+.pradar { padding: 10px 0; }
+.prCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; margin-top: 8px; }
+.prCard { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.prCard h3 { margin: 0 0 6px; font: 600 14px var(--num); letter-spacing: .06em; display: flex; justify-content: space-between; align-items: baseline; }
+.prCard h3 b { font-size: 20px; font-weight: normal; color: var(--text); }
+.prTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.prTable th { color: var(--muted); font-weight: normal; font-size: 10px; text-align: right; padding: 2px 4px; }
+.prTable th:nth-child(2) { text-align: left; }
+.prTable td { padding: 3px 4px; border-top: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.prTable tbody tr { cursor: pointer; } .prTable tbody tr:hover td { background: var(--panel2); }
+.prTable .prTitle { text-align: left; max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; font-family: var(--title); }
+.prTable .lvb { display: inline-block; min-width: 2.6em; margin-right: 6px; color: var(--dc); font-family: var(--num); }
+.prTable .lvb small { color: var(--muted); font-size: 9px; margin-left: 2px; }
+.prTable .prScore { color: var(--text); }
+.prRec { margin-top: 10px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.prRecHead { font-size: 12px; font-weight: 600; margin-bottom: 2px; } .prRecHead .muted { font-weight: normal; font-size: 11px; }
+.prTable .prGain { color: #7ee36b; }
+.prTable th { white-space: nowrap; }
+.prRec .prTable th:nth-child(2) { text-align: right; } .prRec .prTable th:first-child { text-align: left; }
+
+/* 地力表 */
+.ability { padding: 10px 0; }
+#abTotal b { font: 16px var(--num); color: var(--text); }
+.abGroup { margin-top: 14px; }
+.abHead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; }
+.abHead .tag { margin-left: 0; font-size: 12px; padding: 1px 6px; }
+.abHead b { font-family: var(--num); font-size: 15px; }
+.abBar { flex: 1; max-width: 360px; height: 8px; }
+.abBar span { cursor: default; }
+.abTiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+@media (max-width: 900px) { .abTiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .abTiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.abTile { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; text-align: left; padding: 4px 6px 4px 11px; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--lc) 40%, var(--line)); background: color-mix(in srgb, var(--lc) 16%, var(--panel)); font-size: 12px; }
+.abTile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; border-radius: 6px 0 0 6px; background: var(--lc); }
+.abTile:hover { border-color: var(--lc); }
+.abTile .t { width: 100%; font-family: var(--title); font-size: 14px; font-weight: 500; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.abTile .lampname { font-size: 10px; }
+.abTile.L-LOCKED { opacity: .55; }
+.abHead .tag.tier- { color: var(--muted); border: 1px solid var(--muted); }
+.tag.abDiff { color: var(--dc); border: 1px solid var(--dc); margin-left: 4px; font-size: 9px; }
+
 /* 集計 */
 .summary { padding: 12px 0 6px; }
 .sumhead { font-size: 13px; margin-bottom: 6px; }
@@ -86,20 +162,44 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 
 /* 一覧 */
 .list { display: flex; flex-direction: column; gap: 4px; }
-.item { display: grid; grid-template-columns: 8px 34px minmax(0, 1fr) auto; gap: 0 10px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 6px 0; cursor: pointer; overflow: hidden; }
+.item { display: grid; grid-template-columns: 14px 34px minmax(0, 1fr) auto; gap: 0 10px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 6px 0; cursor: pointer; overflow: hidden; }
 .item:hover { border-color: #3b4357; background: #191e28; }
 .item .lampbar { align-self: stretch; margin: -6px 0; background: var(--lc); }
 .item.L-LOCKED { opacity: .55; }
 .item .lv { font-size: 20px; text-align: center; color: var(--dc); line-height: 1; }
 .item .lv small { display: block; font-size: 9px; color: var(--muted); letter-spacing: 0; margin-top: 2px; }
 .item .main { min-width: 0; }
-.item .title { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .title { font-family: var(--title); font-size: 16px; font-weight: 500; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item .sub { color: var(--muted); font-size: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+.radarRow { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.radarBox .rl.rmax { font-weight: 700; }
+.tag.radar-NOTES { color: #3fa9ff; border: 1px solid #3fa9ff; }
+.tag.radar-PEAK { color: #ff8a3d; border: 1px solid #ff8a3d; }
+.tag.radar-SCRATCH { color: #7ee36b; border: 1px solid #7ee36b; }
+.tag.radar-SOF-LAN { color: #4fd8ff; border: 1px solid #4fd8ff; }
+.tag.radar-CHARGE { color: #ff3fb0; border: 1px solid #ff3fb0; }
+.tag.radar-CHORD { color: #c9a7ff; border: 1px solid #c9a7ff; }
+/* 6項目を同じ幅の列に並べ、曲が違っても各項目の位置がそろうようにする */
+.radarBox { display: inline-grid; grid-template-columns: repeat(6, 58px); gap: 2px 8px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 11px; width: fit-content; }
+.radarBox .ri { display: flex; flex-direction: column; white-space: nowrap; line-height: 1.3; }
+.radarBox .rl { font-size: 9px; letter-spacing: .04em; }
+.radarBox .rv { color: var(--text); font-size: 12px; }
+@media (max-width: 640px) { .radarBox { grid-template-columns: repeat(3, auto); } }
+.abilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
+.tag.tier-Sp { color: #ff3b3b; border: 1px solid #ff3b3b; }
+.tag.tier-S { color: #ff8a3d; border: 1px solid #ff8a3d; }
+.tag.tier-Ap { color: #ffd400; border: 1px solid #ffd400; }
+.tag.tier-A { color: #f2f2f2; border: 1px solid #f2f2f2; }
+.tag.tier-Bp { color: #7df9ff; border: 1px solid #7df9ff; }
+.tag.tier-B { color: #3fa9ff; border: 1px solid #3fa9ff; }
+.tag.tier-C { color: #46d160; border: 1px solid #46d160; }
+.tag.tier-D { color: #7ee36b; border: 1px solid #7ee36b; }
+.tag.tier-E { color: #8b93a7; border: 1px solid #8b93a7; }
+.tag.tier-F { color: #6b7280; border: 1px solid #6b7280; }
 .tag { font-size: 10px; font-weight: 700; border-radius: 3px; padding: 0 4px; margin-left: 6px; vertical-align: 2px; }
 .tag.CN, .tag.BSS { color: #ffe14d; border: 1px solid #ffe14d; }
 .tag.HCN, .tag.HBSS { color: #ff6b6b; border: 1px solid #ff6b6b; }
 .tag.MSS { color: #c9a7ff; border: 1px solid #c9a7ff; }
-.tag.SOF-LAN { color: #4fd8ff; border: 1px solid #4fd8ff; }
 .item .score { display: grid; grid-template-columns: auto 11em; gap: 0 10px; align-items: center; text-align: right; }
 .grade { font-size: 18px; min-width: 2.4em; text-align: center; color: var(--gc); }
 .ex { font-size: 15px; }
@@ -115,15 +215,25 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .empty { text-align: center; color: var(--muted); padding: 40px; }
 #sentinel { height: 1px; }
 
-/* フルコンボは点滅させない（一覧が見づらくなるため）。色で表す。EXHは文字色と同じ単色 */
-.L-FULL_COMBO .lampbar { background: linear-gradient(180deg, #ff6b6b, #ffd400, #46d160, #3fa9ff, #c56cf0); }
+/* FAILED はゲームのランプと同じく帯を点滅させる（動きを減らす設定の環境では止まる）。
+   INFINITAS の選曲画面を録画から測った動き: 0.1秒（6フレーム）ごとに、暗い状態（約10%）から最大まで直線的に明るくなり、一瞬で暗く戻る */
+@keyframes failBlink { from { opacity: .1; } to { opacity: 1; } }
+.L-FAILED .lampbar, .abTile.L-FAILED::before { animation: failBlink .1s linear infinite; }
+/* EX HARD: 黄と赤を4フレームずつ交互（8フレーム周期） */
+@keyframes exhBlink { 0% { background: #fde718; } 50% { background: #e21818; } }
+.L-EX_HARD_CLEAR .lampbar, .abTile.L-EX_HARD_CLEAR::before { animation: exhBlink .1333s steps(1, end) infinite; }
+/* FULL COMBO: 水色→黄→白を2フレームずつ（6フレーム周期） */
+@keyframes fcBlink { 0% { background: #46dbfb; } 33.333% { background: #fde718; } 66.667% { background: #f8f8f8; } }
+.L-FULL_COMBO .lampbar, .abTile.L-FULL_COMBO::before { animation: fcBlink .1s steps(1, end) infinite; }
 
 /* ダイアログ */
 dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; width: min(720px, calc(100% - 24px)); max-height: 86vh; }
 dialog::backdrop { background: rgba(0,0,0,.6); }
-dialog h2 { margin: 0 0 4px; font-size: 17px; }
+dialog h2 { margin: 0 0 4px; font-family: var(--title); font-size: 18px; font-weight: 500; }
 dialog .close { position: absolute; top: 8px; right: 10px; background: none; border: 0; color: var(--muted); font-size: 22px; }
 .dinfo { color: var(--muted); font-size: 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.radarWrap { display: flex; flex-direction: column; align-items: center; margin: 4px 0 12px; }
+.radarCaption { font-size: 11px; letter-spacing: .08em; margin-bottom: 2px; }
 .dtable { width: 100%; border-collapse: collapse; font-size: 13px; }
 .dtable th, .dtable td { border-bottom: 1px solid var(--line); padding: 6px; text-align: right; white-space: nowrap; }
 .dtable th:first-child, .dtable td:first-child { text-align: left; }
@@ -146,10 +256,9 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
   .top h1 { font-size: 15px; } .top .sync { display: none; }
   .top { gap: 6px; padding: 8px 10px; }
   .filters { top: 41px; }
-  .item { grid-template-columns: 6px 30px minmax(0, 1fr) auto; gap: 0 8px; }
+  .item { grid-template-columns: 10px 30px minmax(0, 1fr) auto; gap: 0 8px; }
   .item .lv { font-size: 17px; }
   .item .title { font-size: 15px; }
-  .item .sub .opt { display: none; }
   .item .score { grid-template-columns: 8.5em; gap: 0; }
   .item .score > div:last-child { white-space: normal; }
   .grade { font-size: 15px; }
