@@ -131,10 +131,13 @@
 				tasks.push(IV.api.loadResult(rv.id, (data) => { rv.results = data; rebuild(); }, { force }).catch((e) => toast(`${rv.id} の読み込みに失敗しました`)));
 			}
 		}
+		// プレイリザルトを取り込んだ日時（GAS に記録がなければ null → 取得した時刻を出す）
+		const updatedAt = state.guest ? Promise.resolve(null) : IV.api.getUpdatedAt(state.id).catch(() => null);
 		try {
 			await Promise.all(tasks);
 			syncAt = Date.now();
-			setSync(`${timeText(syncAt)} 時点`);
+			const upAt = await updatedAt;
+			setSync(upAt ? `${timeText(upAt)} 取り込み` : `${timeText(syncAt)} 時点`);
 		} catch (e) {
 			console.error(e);
 			setSync("更新に失敗しました");
@@ -203,7 +206,7 @@
 		const pr = M.playerRadar(state.charts, f.style);
 		for (const b of $("#recModeSeg").children) b.setAttribute("aria-checked", b.dataset.v === f.recMode);
 		const rec = f.recMode === "score" ? M.radarRecommendScore(state.charts, f.style, pr) : M.radarRecommend(state.charts, f.style, pr);
-		const vals = Object.fromEntries(M.RADAR_FIELDS.map((k) => [k, Math.round(pr[k].value * 100) / 100]));
+		const vals = Object.fromEntries(M.RADAR_FIELDS.map((k) => [k, pr[k].value]));
 		const fmt = (v) => v.toFixed(2);
 		const cards = M.RADAR_FIELDS.map((k) => {
 			const rows = pr[k].top.map((x, i) => `<tr data-id="${esc(x.c.id)}">
@@ -217,7 +220,7 @@
 				${f.recMode === "score" ? recScoreHtml(rec[k]) : recHtml(rec[k])}
 			</section>`;
 		}).join("");
-		$("#radarBody").innerHTML = radarSvg(vals, {}, `${f.style} プレイヤーのノーツレーダー`, 1.4, false) + `<div class="prCards">${cards}</div>`;
+		$("#radarBody").innerHTML = radarSvg(vals, {}, "PLAYER NOTES RADAR", 1.4, false) + `<div class="prCards">${cards}</div>`;
 	}
 
 	// ---------- フォルダ ----------
@@ -262,7 +265,7 @@
 		for (const b of $("#abModeSeg").children) b.setAttribute("aria-checked", b.dataset.v === f.abMode);
 		if (!isAb) return;
 		const groups = M.abilityGroups(state.charts, f.abMode);
-		const goal = M.LAMP_SHORT[M.ABILITY_GOAL[f.abMode]];
+		const goal = M.ABILITY_GOAL[f.abMode]; // 一覧と同じく略さない（HARD CLEAR など）
 		const total = groups.reduce((n, g) => n + g.items.length, 0);
 		const done = groups.reduce((n, g) => n + g.done, 0);
 		$("#abTotal").innerHTML = total && !state.guest ? `${esc(goal)} 以上 <b class="num">${done}</b> / <span class="num">${total}</span>` : "";
@@ -272,7 +275,7 @@
 			const bar = state.guest ? "" : `<div class="bar abBar">${[...M.LAMPS].reverse().concat(M.LOCKED).filter((l) => s.lamps[l] > 0).map((l) =>
 				`<span style="flex:${s.lamps[l]};background:var(--l-${cssKey(l)})" title="${esc(l === M.LOCKED ? "未解禁" : M.LAMP_SHORT[l])}: ${s.lamps[l]}"></span>`).join("")}</div>`;
 			const tiles = g.items.map((c) => {
-				const lampName = c.lamp === M.LOCKED ? "未解禁" : M.LAMP_SHORT[c.lamp];
+				const lampName = c.lamp === M.LOCKED ? "未解禁" : c.lamp; // 一覧と同じく略さない（HARD CLEAR / EX HARD CLEAR など）
 				return `<button type="button" class="abTile L-${cssKey(c.lamp)}" data-id="${esc(c.id)}" style="--lc:var(--l-${cssKey(c.lamp)})" title="${esc(c.title)}${c.diff !== "A" ? ` (${M.DIFF_NAMES[c.diff]})` : ""}">
 					<span class="t">${esc(c.title)}${c.diff !== "A" ? `<span class="tag abDiff" style="--dc:var(--d-${c.diff})">${c.diff}</span>` : ""}</span>
 					${state.guest ? "" : `<span class="lampname">${esc(lampName)}</span>`}
@@ -296,16 +299,21 @@
 	/** ゲームのノーツレーダーと同じく、HCN・HBSS のどちらかがあれば CHARGE の下に「HELL」と出す */
 	const hellOf = (c) => ({ CHARGE: c.cn === "HCN" || c.bss === "HBSS" });
 	/** 一番大きい項目（ゲームと同じく項目名の前に★を付け、その項目の色で表示する） */
-	const RADAR_COLOR = { NOTES: "#3fa9ff", PEAK: "#ff8a3d", SCRATCH: "#7ee36b", "SOF-LAN": "#4fd8ff", CHARGE: "#ff3fb0", CHORD: "#c9a7ff" };
+	// ゲームの選曲画面のノーツレーダーの文字色（録画 Replay 2026-10-14 12-20-48.mp4 から測定）
+	const RADAR_COLOR = { NOTES: "#f6668c", PEAK: "#ec8662", SCRATCH: "#e05a62", "SOF-LAN": "#6a9fd8", CHARGE: "#7d5fe4", CHORD: "#abe583" };
+	/** 最大項目に付ける★の色（ゲームでは項目の色ではなく黄色っぽい星） */
+	const RADAR_STAR = "#ffe066";
 	const radarTop = (r) => Object.keys(RADAR_COLOR).reduce((a, b) => ((Number(r[b]) || 0) > (Number(r[a]) || 0) ? b : a));
 	function radarMiniHtml(c) {
 		const r = c.radar;
 		if (!r) return "";
 		const entries = Object.keys(RADAR_SHORT).map((k) => ({ key: k, label: RADAR_SHORT[k], v: Number(r[k]) || 0 }));
 		const top = radarTop(r);
-		// 上の行に項目名（最大の項目は「★名前」をその項目の色で）、下の行に数値。HELL の札は一覧には出さない（詳細のチャートだけ）
+		// 上の行に項目名（全項目その項目の色。最大の項目は前に黄色の★）、下の行に数値。HELL の札は一覧には出さない（詳細のチャートだけ）
 		const parts = entries.map(({ key, label, v }) => {
-			const name = key === top ? `<span class="rl rmax" style="color:${RADAR_COLOR[key]}">★${label}</span>` : `<span class="rl">${label}</span>`;
+			const name = key === top
+				? `<span class="rl rmax" style="color:${RADAR_COLOR[key]}"><span style="color:${RADAR_STAR}">★</span>${label}</span>`
+				: `<span class="rl" style="color:${RADAR_COLOR[key]}">${label}</span>`;
 			return `<span class="ri">${name}<span class="rv">${v % 1 === 0 ? v : v.toFixed(2)}</span></span>`;
 		});
 		return `<div class="radarRow"><div class="radarBox num">${parts.join("")}</div></div>`;
@@ -329,10 +337,11 @@
 		let score = `<span class="lampname">${esc(lampName)}</span>`;
 		if (c.played) {
 			score = `
-				<div class="grade" style="--gc:var(--g-${c.grade})">${c.grade}</div>
+				<div class="gradeBox"><div class="grade" style="--gc:var(--g-${c.grade})">${c.grade}</div><div class="rate gradeNext">${esc(c.gradeDetail)}</div></div>
 				<div><div class="ex">${c.ex}<small> /${c.notes * 2}</small></div>
-				<div class="rate">${(c.rate * 100).toFixed(2)}% ・ ${esc(c.gradeDetail)}</div>
-				<span class="lampname">${esc(lampName)}</span>${c.miss != null ? ` <span class="rate">MISS ${c.miss}</span>` : ""}</div>`;
+				<div class="rate">${(c.rate * 100).toFixed(2)}%</div>
+				${c.miss != null ? `<div class="rate">MISS COUNT ${c.miss}</div>` : ""}
+				<div class="lampname">${esc(lampName)}</div></div>`;
 		}
 		const rv = c.rivals.filter((r) => r.played).map((r) => {
 			const cls = r.diff == null ? "" : r.diff > 0 ? "w" : r.diff < 0 ? "l" : "d";
@@ -417,11 +426,11 @@
 	// ---------- 詳細 ----------
 	const RADAR_FIELDS = ["NOTES", "PEAK", "SCRATCH", "SOF-LAN", "CHARGE", "CHORD"];
 	function radarHtml(c) {
-		if (!c.radar) return `<p class="muted" style="text-align:center;margin:8px 0;">ノーツレーダーデータなし</p>`;
-		return radarSvg(c.radar, hellOf(c), "ノーツレーダー");
+		if (!c.radar) return `<p class="muted" style="text-align:center;margin:8px 0;">NOTES RADAR データなし</p>`;
+		return radarSvg(c.radar, hellOf(c), "NOTES RADAR", 1.3, true, `var(--d-${c.diff})`);
 	}
 	/** 六角形のレーダーチャート。r は { NOTES: 数値, … }、hell は { CHARGE: true } のような HELL 札の有無 */
-	function radarSvg(r, hell, caption, scale = 1, markTop = true) {
+	function radarSvg(r, hell, caption, scale = 1, markTop = true, color = "var(--accent)") {
 		const vals = RADAR_FIELDS.map((f) => Number(r[f]) || 0);
 		const top = markTop ? radarTop(r) : "";
 		const max = Math.max(200, ...vals.map((v) => Math.ceil(v / 50) * 50));
@@ -433,28 +442,37 @@
 			return [cx + rr * Math.cos(angle(i)), cy + rr * Math.sin(angle(i))];
 		};
 		const anchorOf = (i) => { const d = Math.cos(angle(i)); return d > 0.3 ? "start" : d < -0.3 ? "end" : "middle"; };
-		const rings = [0.25, 0.5, 0.75, 1].map((frac) =>
-			`<polygon points="${RADAR_FIELDS.map((_, i) => { const a = angle(i); return `${(cx + R * frac * Math.cos(a)).toFixed(1)},${(cy + R * frac * Math.sin(a)).toFixed(1)}`; }).join(" ")}" fill="none" stroke="var(--line)" stroke-width="1"/>`
-		).join("");
-		const axes = RADAR_FIELDS.map((_, i) => { const [x, y] = axisEnd(i); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`; }).join("");
+		// 背景はゲームの選曲画面に合わせる（録画から測定）: 中は真っ黒、外枠は白い細線、中心から各頂点へ灰色 #4a4a4a の軸、
+		// 各頂点の外側に白い短い目盛り。内側の段の線はなし
+		// 白い外枠と目盛りの太さ。画面上で 2×scale から 1px 細くする（ユーザー指定）
+		const bw = (2 - 1 / scale).toFixed(2);
+		const hexPts = RADAR_FIELDS.map((_, i) => axisEnd(i).map((n) => n.toFixed(1)).join(",")).join(" ");
+		const ticks = RADAR_FIELDS.map((_, i) => {
+			const a = angle(i), [x1, y1] = axisEnd(i);
+			return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${(cx + (R + 6.5) * Math.cos(a)).toFixed(1)}" y2="${(cy + (R + 6.5) * Math.sin(a)).toFixed(1)}" stroke="#f4feff" stroke-width="${bw}"/>`;
+		}).join("");
+		const rings = `<polygon points="${hexPts}" fill="#000"/>`;
+		const axes = RADAR_FIELDS.map((_, i) => { const [x, y] = axisEnd(i); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#4a4a4a" stroke-width="1.5"/>`; }).join("")
+			+ `<polygon points="${hexPts}" fill="none" stroke="#f4feff" stroke-width="${bw}" stroke-linejoin="miter"/>` + ticks;
 		const dataPts = RADAR_FIELDS.map((_, i) => dataPt(i, vals[i]).map((n) => n.toFixed(1)).join(",")).join(" ");
 		const labels = RADAR_FIELDS.map((f, i) => {
 			const a = angle(i);
 			const lx = cx + (R + 16) * Math.cos(a), ly = cy + (R + 16) * Math.sin(a);
 			const label = f === top
-				? `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchorOf(i)}" dominant-baseline="middle" fill="${RADAR_COLOR[f]}" font-size="10" font-weight="700">★${f}</text>`
-				: `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchorOf(i)}" dominant-baseline="middle" fill="var(--muted)" font-size="10">${f}</text>`;
+				? `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchorOf(i)}" dominant-baseline="middle" fill="${RADAR_COLOR[f]}" font-size="10" font-weight="700"><tspan fill="${RADAR_STAR}">★</tspan>${f}</text>`
+				: `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchorOf(i)}" dominant-baseline="middle" fill="${RADAR_COLOR[f]}" font-size="10">${f}</text>`;
 			if (!hell[f]) return label;
 			// ラベルの下に HELL の札（ゲームと同じく暗い赤の枠に赤い文字）
 			// ゲームの札を測った色: 中 #1e0002、枠 #7a1020、文字 #ff5a50（横長の字体で字間を広めに、ほんのり光らせる）
 			const w = 42, h = 11, bx = anchorOf(i) === "end" ? lx - w : anchorOf(i) === "start" ? lx : lx - w / 2;
-			return label + `<rect x="${bx.toFixed(1)}" y="${(ly + 7).toFixed(1)}" width="${w}" height="${h}" rx="1" fill="#1e0002" stroke="#7a1020" stroke-width="1"/>`
-				+ `<text x="${(bx + w / 2).toFixed(1)}" y="${(ly + 13).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="#ff5a50" font-family="Saira Semi Expanded, sans-serif" font-size="8.5" font-weight="600" letter-spacing="1.6" style="text-shadow:0 0 3px rgba(255,70,70,.7)">HELL</text>`;
+			// 数値（項目名の下）のさらに下に置く
+			return label + `<rect x="${bx.toFixed(1)}" y="${(ly + 19).toFixed(1)}" width="${w}" height="${h}" rx="1" fill="#1e0002" stroke="#7a1020" stroke-width="1"/>`
+				+ `<text x="${(bx + w / 2).toFixed(1)}" y="${(ly + 25).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="#ff5a50" font-family="Saira Semi Expanded, sans-serif" font-size="8.5" font-weight="600" letter-spacing="1.6" style="text-shadow:0 0 3px rgba(255,70,70,.7)">HELL</text>`;
 		}).join("");
 		const valueLabels = RADAR_FIELDS.map((f, i) => {
 			const a = angle(i);
-			const [px, py] = dataPt(i, vals[i]);
-			const lx = px + 11 * Math.cos(a), ly = py + 11 * Math.sin(a);
+			// 数値は項目名の下（一番上の NOTES だけ項目名の上）に出し、チャートの線に重ねない
+			const lx = cx + (R + 16) * Math.cos(a), ly = cy + (R + 16) * Math.sin(a) + (Math.sin(a) < -0.9 ? -12 : 12);
 			const v = vals[i];
 			return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchorOf(i)}" dominant-baseline="middle" fill="var(--text)" font-size="11" class="num">${v % 1 === 0 ? v : v.toFixed(2)}</text>`;
 		}).join("");
@@ -462,7 +480,7 @@
 			<div class="radarCaption muted">${esc(caption)}</div>
 			<svg viewBox="0 0 270 240" width="${270 * scale}" height="${240 * scale}">
 				${rings}${axes}
-				<polygon points="${dataPts}" fill="var(--accent)" fill-opacity="0.18" stroke="var(--accent)" stroke-width="1" stroke-linejoin="round"/>
+				<polygon points="${dataPts}" fill="${color}" fill-opacity="0.5" stroke="${color}" stroke-opacity="0.9" stroke-width="1" stroke-linejoin="round"/>
 				${labels}${valueLabels}
 			</svg>
 		</div>`;
@@ -479,19 +497,19 @@
 				<td class="lvcell">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
 				<td class="num">${x.notes}</td><td class="num">${esc(x.bpm)}</td>
 				<td style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>
-				<td class="num">${x.played ? `${x.grade} ${x.ex}` : "-"}</td>
-				<td class="num">${x.played ? `${(x.rate * 100).toFixed(2)}%` : "-"}</td>
-				<td class="num">${x.played ? esc(x.gradeDetail) : "-"}</td>
-				<td class="num">${x.miss ?? "-"}</td>${rv}
+				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
+				<td class="num">${x.played ? `${x.ex}<span class="muted"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
+				<td class="num">${x.miss ?? "-"}</td>
+				<td class="mvcell">${x.mv ? `<a class="mv" href="${esc(x.mv)}" target="_blank" rel="noopener">▶ 動画</a>` : ""}</td>${rv}
 			</tr>`;
 		}).join("");
-		const mv = same.filter((x) => x.mv).map((x) => `<a class="mv" href="${esc(x.mv)}" target="_blank" rel="noopener">▶ ${x.style}${x.diff} の動画</a>`).join(" ");
 		$("#detailBody").innerHTML = `
+			${s.GENRE ? `<div class="dgenre">${esc(s.GENRE)}</div>` : ""}
 			<h2>${esc(s.TITLE)}</h2>
-			<div class="dinfo"><span>${esc(s.ARTIST)}</span><span>${esc(s.GENRE)}</span><span>${esc(s.FOLDER)}</span><span class="num">TIME ${esc(s.TIME || "-")}</span>${mv}</div>
+			<div class="dinfo"><span>${esc(s.ARTIST)}</span></div>
 			${radarHtml(c)}
 			<div style="overflow-x:auto"><table class="dtable">
-				<thead><tr><th>${c.style}</th><th>NOTES</th><th>BPM</th><th>ランプ</th><th>スコア</th><th>レート</th><th>目安</th><th>MISS</th>${rivalHead}</tr></thead>
+				<thead><tr><th>${c.style}</th><th>NOTES</th><th>BPM</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th><th>動画</th>${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>`;
 		$("#detail").showModal();

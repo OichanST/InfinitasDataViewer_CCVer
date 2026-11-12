@@ -6,6 +6,7 @@
  *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
  *     ?type=getPlayResult&id=DJ名  プレイリザルト [{ TITLE, SPN:{OPEN,CLEARSTATUS,PLAYRESULT,EXSCORE,MISSCOUNT,MV}, ... }]
  *     ?type=checkUser&id=DJ名      { result: true/false }
+ *     ?type=getUpdatedAt&id=DJ名   { id, updatedAt: ISO日時 or null }（プレイリザルトを取り込んだ日時）
  * - 取得したデータは localStorage に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く
  */
 window.IV = window.IV || {};
@@ -63,6 +64,12 @@ IV.api = (() => {
 		loadRadar: (onData, opts) => load("radar", { type: "getRadarData" }, onData, opts),
 		loadAbility: (onData, opts) => load("ability", { type: "getAbilityData" }, onData, opts),
 		checkUser: async (id) => !!(await get({ type: "checkUser", id })).result,
+		/** プレイリザルトを取り込んだ日時（ミリ秒）。記録がない・GAS が未対応なら null */
+		async getUpdatedAt(id) {
+			const r = await get({ type: "getUpdatedAt", id });
+			const t = r && r.updatedAt ? Date.parse(r.updatedAt) : NaN;
+			return Number.isNaN(t) ? null : t;
+		},
 		clearCache() {
 			Object.keys(localStorage).filter((k) => k.startsWith(PREFIX)).forEach((k) => localStorage.removeItem(k));
 		},

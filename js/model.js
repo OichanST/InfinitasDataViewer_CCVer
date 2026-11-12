@@ -257,6 +257,8 @@ IV.model = (() => {
 	}
 
 	const RADAR_FIELDS = ["NOTES", "PEAK", "SCRATCH", "SOF-LAN", "CHARGE", "CHORD"];
+	/** 小数2桁で切り捨て（浮動小数の誤差で 1.23 が 1.2299999… になって 1.22 に落ちないよう微小値を足す） */
+	const floor2 = (v) => Math.floor(v * 100 + 1e-6) / 100;
 	/**
 	 * プレイヤーのノーツレーダー。項目ごとに「譜面のレーダー値 × スコアレート（EX ÷ (ノーツ数×2)）」を計算し、
 	 * 上位10譜面の平均をその項目の値にする（SP/DP は別々に計算）。
@@ -267,11 +269,13 @@ IV.model = (() => {
 		const out = {};
 		for (const f of RADAR_FIELDS) {
 			const list = played
-				.map((c) => { const radar = Number(c.radar[f]) || 0; return { c, radar, rate: c.rate, score: radar * c.rate }; })
+				.map((c) => { const radar = Number(c.radar[f]) || 0; return { c, radar, rate: c.rate, score: floor2(radar * c.rate) }; })
 				.filter((x) => x.score > 0)
 				.sort((a, b) => b.score - a.score)
 				.slice(0, n);
-			out[f] = { value: list.length ? list.reduce((s, x) => s + x.score, 0) / n : 0, top: list };
+			// 端数は四捨五入ではなく切り捨て（実機と照合済み）。譜面ごとの値も平均も小数2桁で切り捨て。誤差を避けるため 1/100 単位の整数で計算
+			const sum = list.reduce((s, x) => s + Math.round(x.score * 100), 0);
+			out[f] = { value: Math.floor(sum / n) / 100, top: list };
 		}
 		return out;
 	}
@@ -282,7 +286,7 @@ IV.model = (() => {
 	 * 今の10位（ボーダー）を超えて項目の値がどれだけ上がるかを見積もって、上がり幅の大きい順に並べる。未解禁の譜面は除く。
 	 * 戻り値: { NOTES: { border, list: [{ c, radar, expRate, needRate, gain }] }, … }
 	 */
-	function radarRecommend(charts, style, pr, n = 5) {
+	function radarRecommend(charts, style, pr, n = 10) {
 		const mine = charts.filter((c) => c.style === style && c.open && c.radar && c.notes > 0);
 		const byLevel = new Map();
 		for (const c of mine) if (c.played) {
@@ -318,7 +322,7 @@ IV.model = (() => {
 	 * 「あと EX スコアを何点伸ばせば10位（ボーダー）を超えるか」が少ない順に並べる。
 	 * 戻り値: { NOTES: { border, list: [{ c, radar, needRate, needEx }] }, … }
 	 */
-	function radarRecommendScore(charts, style, pr, n = 5) {
+	function radarRecommendScore(charts, style, pr, n = 10) {
 		const easy = LAMPS.indexOf("EASY CLEAR");
 		const cleared = charts.filter((c) => c.style === style && c.played && c.lampIdx >= easy && c.radar && c.notes > 0);
 		const out = {};
