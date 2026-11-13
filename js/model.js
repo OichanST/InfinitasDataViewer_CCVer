@@ -356,5 +356,36 @@ IV.model = (() => {
 		return out;
 	}
 
-	return { DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups };
+	/**
+	 * 更新履歴（Google ドライブの history.json）を、新しい順の回ごとにまとめる。
+	 * 変化は [曲名, "SPA", [ランプ, EX, MISS] or null, [ランプ, EX, MISS]]。譜面が一覧にあれば c に入る（DJ LEVEL・詳細表示用）
+	 */
+	function historySessions(history, charts) {
+		const byId = new Map(charts.map((c) => [c.id, c]));
+		const sessions = ((history && history.sessions) || []).map((s) => {
+			const changes = (s.changes || []).map(([title, key, b, a]) => {
+				const c = byId.get(`${key}|${title}`) || null;
+				const side = (v) => {
+					if (!v) return null;
+					const [lamp, ex, miss] = v;
+					const g = c && lamp !== "NO PLAY" ? grade(c.notes, ex) : { grade: "", detail: "", rate: 0 };
+					return { lamp, lampIdx: LAMPS.indexOf(lamp), ex, miss, grade: g.grade, rate: g.rate };
+				};
+				const before = side(b), after = side(a);
+				return {
+					id: `${key}|${title}`, c, title, key, style: key.slice(0, 2), diff: key.slice(2),
+					level: c ? c.level : "", before, after,
+					lampUp: !before || after.lampIdx > before.lampIdx,
+					exDiff: after.ex - (before ? before.ex : 0),
+					missDiff: before && before.miss != null && after.miss != null ? after.miss - before.miss : null,
+				};
+			});
+			// ランプが上がった譜面を先に。その中はレベルの高い順、同じなら EX の伸びが大きい順
+			changes.sort((x, y) => (y.lampUp - x.lampUp) || (Number(y.level) || 0) - (Number(x.level) || 0) || y.exDiff - x.exDiff);
+			return { at: Date.parse(s.at), baseline: !!s.baseline, count: s.count || 0, changes };
+		});
+		return sessions.sort((a, b) => b.at - a.at);
+	}
+
+	return { historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups };
 })();

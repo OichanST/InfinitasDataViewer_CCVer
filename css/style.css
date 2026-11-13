@@ -120,6 +120,39 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .prTable th { white-space: nowrap; }
 .prRec .prTable th:nth-child(2) { text-align: right; } .prRec .prTable th:first-child { text-align: left; }
 
+/* 更新履歴 */
+.hist { padding: 10px 0; }
+.hSession { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.hSession h3 { margin: 0 0 4px; font-size: 12px; font-weight: normal; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; }
+.hSession h3 > .num { font-size: 16px; color: var(--text); }
+.hSession h3 b { font: 14px var(--num); color: var(--text); }
+.hTable { min-width: 560px; }
+.hTable th:first-child, .hTable th:nth-child(2) { text-align: left; }
+.hTable .hLamp { text-align: left; }
+.hUp { color: #7ee36b; } .hDown { color: #ff6b6b; }
+.hNone { margin: 4px 0 0; font-size: 12px; }
+.dhist { margin-top: 14px; }
+/* 日ごとの成果グラフ（色は dataviz の既定パレット 1・2 番、背景に対して検証済み） */
+.hChart { --h-lamp: #3987e5; --h-ex: #d95926; position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.hcHead { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; font-size: 12px; margin-bottom: 4px; }
+.hcTitle { font-weight: 600; }
+.hcLegend, .hcTip span { color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+.hcLegend i, .hcTip i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-left: 8px; }
+.hcLegend i:first-child { margin-left: 0; }
+i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
+.hcScroll { overflow-x: auto; }
+.hChart svg { display: block; }
+.hChart path.hcLamp { fill: var(--h-lamp); } .hChart path.hcEx { fill: var(--h-ex); }
+.hcGrid { stroke: var(--line); stroke-width: 1; opacity: .5; } .hcBase { stroke: var(--muted); stroke-width: 1; }
+.hcAxis { fill: var(--muted); font-size: 10px; font-family: var(--num); }
+.hcHit { fill: transparent; cursor: pointer; }
+.hcCol:hover .hcHit { fill: rgba(255,255,255,.05); }
+.hcTip { position: absolute; z-index: 2; pointer-events: none; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
+.hcTip[hidden] { display: none; }
+.hcTip i { margin-left: 0; }
+.hcTip b { color: var(--text); font-weight: normal; }
+.dhist .dtable th:nth-child(2), .dhist .dtable td:nth-child(2), .dhist .dtable th:nth-child(3), .dhist .hLamp { text-align: left; }
+
 /* 地力表 */
 .ability { padding: 10px 0; }
 #abTotal b { font: 16px var(--num); color: var(--text); }

@@ -34,8 +34,19 @@
 
 <main id="app" hidden>
   <nav class="tabs" id="viewTabs" role="tablist">
-    <button type="button" role="tab" data-view="list">一覧</button><button type="button" role="tab" data-view="folder">バージョン</button><button type="button" role="tab" data-view="ability">地力表</button><button type="button" role="tab" data-view="radar">レーダー</button>
+    <button type="button" role="tab" data-view="list">一覧</button><button type="button" role="tab" data-view="folder">バージョン</button><button type="button" role="tab" data-view="ability">地力表</button><button type="button" role="tab" data-view="radar">レーダー</button><button type="button" role="tab" data-view="history">履歴</button>
   </nav>
+
+  <!-- 更新履歴（アップロードのたびに前回から変わった譜面。Google ドライブの history.json） -->
+  <section class="hist" id="historyView" hidden>
+    <div class="frow">
+      <div class="seg" id="histStyleSeg" role="radiogroup" aria-label="プレイスタイル">
+        <button type="button" data-v="SP">SP</button><button type="button" data-v="DP">DP</button>
+      </div>
+      <span class="muted" id="histNote"></span>
+    </div>
+    <div id="histBody"></div>
+  </section>
 
   <!-- プレイヤーのノーツレーダー -->
   <section class="pradar" id="radarView" hidden>

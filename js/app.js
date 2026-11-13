@@ -16,6 +16,7 @@
 		charts: [], view: [], shown: 0,
 		radarMap: new Map(),
 		abilityMap: new Map(),
+		history: null, // Google ドライブの history.json（まだ無ければ null）
 		f: null,
 	};
 
@@ -37,9 +38,9 @@
 			if (p.has(k)) o[key] = p.get(k);
 		}
 		if (p.has("lock")) o.hideLocked = p.get("lock") === "0";
-		if (p.has("v")) o.view = { ab: "ability", fd: "folder", rd: "radar" }[p.get("v")] || "list";
+		if (p.has("v")) o.view = { ab: "ability", fd: "folder", rd: "radar", hs: "history" }[p.get("v")] || "list";
 		if (p.has("abm")) o.abMode = p.get("abm") === "hard" ? "hard" : "nomage";
-		if (!["ability", "folder", "radar"].includes(o.view)) o.view = "list";
+		if (!["ability", "folder", "radar", "history"].includes(o.view)) o.view = "list";
 		if (o.abMode !== "hard") o.abMode = "nomage";
 		return toFilter(o);
 	}
@@ -60,6 +61,7 @@
 		if (f.view === "ability") p.set("v", "ab");
 		if (f.view === "folder") p.set("v", "fd");
 		if (f.view === "radar") p.set("v", "rd");
+		if (f.view === "history") p.set("v", "hs");
 		if (f.view === "folder" && f.fdOpen) p.set("fo", f.fdOpen);
 		if (f.abMode === "hard") p.set("abm", "hard");
 		const url = new URL(location.href);
@@ -130,6 +132,13 @@
 			for (const rv of state.rivals) {
 				tasks.push(IV.api.loadResult(rv.id, (data) => { rv.results = data; rebuild(); }, { force }).catch((e) => toast(`${rv.id} の読み込みに失敗しました`)));
 			}
+			// 更新履歴（Google ドライブ）。読めなくてもほかの表示には影響させない
+			const id = state.id;
+			tasks.push(IV.api.loadHistory(id, (data) => {
+				if (state.id !== id) return;
+				state.history = data;
+				if (state.charts.length) apply();
+			}, { force }).catch((e) => console.warn("更新履歴の読み込みに失敗しました", e)));
 		}
 		// プレイリザルトを取り込んだ日時（GAS に記録がなければ null → 取得した時刻を出す）
 		const updatedAt = state.guest ? Promise.resolve(null) : IV.api.getUpdatedAt(state.id).catch(() => null);
@@ -167,6 +176,118 @@
 		renderAbility();
 		renderFolders();
 		renderPlayerRadar();
+		state.histSessions = M.historySessions(state.history, state.charts);
+		renderHistory();
+	}
+
+	// ---------- 更新履歴 ----------
+	const lampHtml = (l) => `<span style="color:var(--lt-${cssKey(l)}, var(--l-${cssKey(l)}))">${esc(l)}</span>`;
+	const signed = (n) => (n > 0 ? "+" : "") + n;
+	/** 1譜面ぶんの変化のセル（ランプ / DJ LEVEL / EX SCORE / MISS COUNT）。変わったところだけ「前 → 後」 */
+	function changeCells(x) {
+		const b = x.before, a = x.after;
+		const lamp = !b || b.lamp !== a.lamp ? `${lampHtml(b ? b.lamp : "NO PLAY")} <span class="muted">→</span> ${lampHtml(a.lamp)}` : `<span class="muted">${esc(a.lamp)}</span>`;
+		const g = (v) => v.grade ? `<span style="color:var(--g-${v.grade})">${v.grade}</span>` : "";
+		const grade = !a.grade ? "" : b && b.grade && b.grade !== a.grade ? `${g(b)} <span class="muted">→</span> ${g(a)}` : g(a);
+		const ex = `${a.ex}${b && x.exDiff ? ` <span class="${x.exDiff > 0 ? "hUp" : "hDown"}">${signed(x.exDiff)}</span>` : ""}`;
+		const miss = a.miss == null ? "-" : `${a.miss}${x.missDiff ? ` <span class="${x.missDiff < 0 ? "hUp" : "hDown"}">${signed(x.missDiff)}</span>` : ""}`;
+		return `<td class="hLamp">${lamp}</td><td class="num">${grade}</td><td class="num">${ex}</td><td class="num">${miss}</td>`;
+	}
+	const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+	/**
+	 * 日ごとの成果（ランプ更新・スコア更新の件数）の縦棒グラフ。遊んだ日だけを並べる（直近30日分、古い順）。
+	 * 色は dataviz スキルの既定パレット 1・2 番（ビューアの背景 #070f27 に対して検証済み）
+	 */
+	function histChartHtml(sessions, style) {
+		const days = new Map();
+		for (const s of sessions) {
+			if (s.baseline) continue;
+			const k = dayKey(s.at);
+			const d = days.get(k) || { k, at: s.at, lamp: 0, ex: 0 };
+			for (const x of s.changes) {
+				if (x.style !== style) continue;
+				if (x.lampUp) d.lamp++;
+				if (x.exDiff > 0) d.ex++;
+			}
+			days.set(k, d);
+		}
+		const list = [...days.values()].sort((a, b) => a.k.localeCompare(b.k)).slice(-30);
+		if (!list.length) return "";
+		// 目盛りは 1・2・5 の倍数で4本前後
+		const max = Math.max(1, ...list.flatMap((d) => [d.lamp, d.ex]));
+		const step = [1, 2, 5, 10, 20, 50, 100, 200, 500].find((s) => max / s <= 4) || 1000;
+		const top = step * Math.ceil(max / step);
+		const L = 30, T = 8, PH = 140, B = 22, SLOT = 48, BW = 16, GAP = 2;
+		const W = L + list.length * SLOT + 8, H = T + PH + B;
+		const y = (v) => T + PH - (v / top) * PH;
+		const bar = (x, v, cls) => {
+			if (!v) return "";
+			const y0 = T + PH, y1 = y(v), r = Math.min(4, y0 - y1, BW / 2);
+			return `<path class="${cls}" d="M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + BW - r}Q${x + BW},${y1} ${x + BW},${y1 + r}V${y0}Z"/>`;
+		};
+		let grid = "";
+		for (let v = 0; v <= top; v += step) {
+			grid += `<line x1="${L}" x2="${W - 4}" y1="${y(v)}" y2="${y(v)}" class="${v ? "hcGrid" : "hcBase"}"/><text x="${L - 6}" y="${y(v)}" class="hcAxis" text-anchor="end" dominant-baseline="middle">${v}</text>`;
+		}
+		const cols = list.map((d, i) => {
+			const x0 = L + i * SLOT, bx = x0 + (SLOT - BW * 2 - GAP) / 2;
+			const date = new Date(d.at);
+			return `<g class="hcCol" data-day="${d.k}" data-tip="${date.getMonth() + 1}/${date.getDate()}|${d.lamp}|${d.ex}">
+				<rect x="${x0}" y="${T}" width="${SLOT}" height="${PH + B}" class="hcHit"/>
+				${bar(bx, d.lamp, "hcLamp")}${bar(bx + BW + GAP, d.ex, "hcEx")}
+				<text x="${x0 + SLOT / 2}" y="${T + PH + 15}" class="hcAxis" text-anchor="middle">${date.getMonth() + 1}/${date.getDate()}</text>
+			</g>`;
+		}).join("");
+		return `<section class="hChart">
+			<div class="hcHead"><span class="hcTitle">日ごとの成果</span>
+				<span class="hcLegend"><i class="hcLamp"></i>ランプ更新<i class="hcEx"></i>スコア更新</span></div>
+			<div class="hcScroll"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="日ごとのランプ更新数とスコア更新数">${grid}${cols}</svg></div>
+			<div class="hcTip" hidden></div>
+		</section>`;
+	}
+	const chartCell = (x) => `<td class="prTitle"><span class="lvb" style="--dc:var(--d-${x.diff})">${x.level}<small>${esc(x.key)}</small></span>${esc(x.title)}</td>`;
+	function renderHistory() {
+		const f = state.f;
+		const on = f.view === "history";
+		$("#historyView").hidden = !on;
+		if (!on) return;
+		for (const b of $("#histStyleSeg").children) b.setAttribute("aria-checked", b.dataset.v === f.style);
+		$("#histNote").textContent = "";
+		if (state.guest) { $("#histBody").innerHTML = `<p class="empty">プレイリザルトを読み込むと表示されます。</p>`; return; }
+		const sessions = state.histSessions || [];
+		if (!sessions.length) {
+			$("#histBody").innerHTML = `<p class="empty">まだ履歴がありません。INFINITAS を終了してアップロードされると、ここに出ます。</p>`;
+			return;
+		}
+		$("#histNote").textContent = "INFINITAS を終了してアップロードした回ごとに、前回から変わった譜面";
+		$("#histBody").innerHTML = histChartHtml(sessions, f.style) + sessions.map((s) => {
+			const when = `<span class="num">${timeText(s.at)}</span>`;
+			if (s.baseline) {
+				return `<section class="hSession" data-day="${dayKey(s.at)}"><h3>${when}<span class="muted">記録開始（${s.count} 譜面）。ここから先の変化を記録します</span></h3></section>`;
+			}
+			const list = s.changes.filter((x) => x.style === f.style);
+			const lampN = list.filter((x) => x.lampUp).length;
+			const exN = list.filter((x) => x.exDiff > 0).length;
+			const rows = list.map((x) => `<tr${x.c ? ` data-id="${esc(x.id)}"` : ""}>${chartCell(x)}${changeCells(x)}</tr>`).join("");
+			return `<section class="hSession" data-day="${dayKey(s.at)}"><h3>${when}<span>ランプ更新 <b class="num">${lampN}</b></span><span>スコア更新 <b class="num">${exN}</b></span></h3>
+				${list.length ? `<div style="overflow-x:auto"><table class="prTable hTable"><thead><tr><th>譜面</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows}</tbody></table></div>`
+					: `<p class="muted hNone">${f.style} の変化はありません</p>`}
+			</section>`;
+		}).join("");
+		const sc = $("#histBody .hcScroll");
+		if (sc) sc.scrollLeft = sc.scrollWidth; // 新しい日（右端）を見せる
+	}
+	/** 詳細モーダル用: その曲（同じ SP/DP）の変化を新しい順に */
+	function songHistoryHtml(c) {
+		const rows = [];
+		for (const s of state.histSessions || []) {
+			for (const x of s.changes) {
+				if (x.title === c.title && x.style === c.style) rows.push(`<tr style="--dc:var(--d-${x.diff})"><td class="num">${timeText(s.at)}</td><td class="lvcell">${M.DIFF_NAMES[x.diff] || x.diff}</td>${changeCells(x)}</tr>`);
+			}
+		}
+		if (!rows.length) return "";
+		return `<div class="dhist"><div class="radarCaption muted">HISTORY</div><div style="overflow-x:auto"><table class="dtable">
+			<thead><tr><th>日時</th><th>譜面</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows.join("")}</tbody></table></div></div>`;
 	}
 
 	// ---------- プレイヤーのノーツレーダー ----------
@@ -260,7 +381,7 @@
 		const f = state.f;
 		const isAb = f.view === "ability";
 		$("#abilityView").hidden = !isAb;
-		$("#listView").hidden = isAb || f.view === "radar";
+		$("#listView").hidden = isAb || f.view === "radar" || f.view === "history";
 		for (const b of $("#viewTabs").children) b.setAttribute("aria-selected", b.dataset.view === f.view);
 		for (const b of $("#abModeSeg").children) b.setAttribute("aria-checked", b.dataset.v === f.abMode);
 		if (!isAb) return;
@@ -522,7 +643,8 @@
 			<div style="overflow-x:auto"><table class="dtable">
 				<thead><tr><th>${c.style}</th><th>NOTES</th><th>BPM</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th><th>動画</th>${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
-			</table></div>`;
+			</table></div>
+			${songHistoryHtml(c)}`;
 		$("#detail").showModal();
 	}
 
@@ -539,6 +661,7 @@
 		state.id = guest ? "" : id;
 		state.guest = guest;
 		state.results = null;
+		state.history = null;
 		state.rivals = guest ? [] : (IV.api.prefs.get("rivals:" + id, []) || []).map((rid) => ({ id: rid, results: null }));
 		if (!guest) IV.api.prefs.set("lastId", id);
 		$("#userName").textContent = guest ? "ゲスト" : id;
@@ -585,6 +708,27 @@
 		$("#recModeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().recMode = b.dataset.v; apply(); } });
 		$("#radarStyleSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().style = b.dataset.v; apply(); } });
 		$("#radarBody").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-id]"); if (tr) openDetail(tr.dataset.id); });
+		$("#histStyleSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().style = b.dataset.v; apply(); } });
+		$("#histBody").addEventListener("click", (e) => {
+			const tr = e.target.closest("tr[data-id]"); if (tr) { openDetail(tr.dataset.id); return; }
+			// グラフの棒を押すと、その日の回（新しい順なのでその日の最後の回）までスクロール
+			const col = e.target.closest(".hcCol");
+			const sec = col && document.querySelector(`#histBody .hSession[data-day="${col.dataset.day}"]`);
+			if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+		});
+		// グラフのツールチップ（その日の日付と件数）
+		$("#histBody").addEventListener("mousemove", (e) => {
+			const tip = $("#histBody .hcTip"); if (!tip) return;
+			const col = e.target.closest(".hcCol");
+			if (!col) { tip.hidden = true; return; }
+			const [date, lamp, ex] = col.dataset.tip.split("|");
+			tip.innerHTML = `<b class="num">${esc(date)}</b><span><i class="hcLamp"></i>ランプ更新 <b class="num">${lamp}</b></span><span><i class="hcEx"></i>スコア更新 <b class="num">${ex}</b></span>`;
+			tip.hidden = false;
+			const box = tip.parentElement.getBoundingClientRect();
+			tip.style.left = Math.min(e.clientX - box.left + 12, box.width - tip.offsetWidth - 4) + "px";
+			tip.style.top = (e.clientY - box.top + 12) + "px";
+		});
+		$("#histBody").addEventListener("mouseleave", () => { const tip = $("#histBody .hcTip"); if (tip) tip.hidden = true; });
 		$("#abModeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().abMode = b.dataset.v; apply(); } });
 		// フォルダ: 押すと中身を開く／閉じる、曲を押すと詳細
 		$("#folderView").addEventListener("click", (e) => {

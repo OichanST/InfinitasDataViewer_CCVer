@@ -21,6 +21,10 @@ beatmania IIDX INFINITAS のプレイリザルト（クリアランプ・EXス�
 4. 一覧の行を押すと、その曲の全譜面のリザルト（ノーツ数・BPM・ランプ・スコア・次のDJ LEVELまでの目安・ミスカウント・ライバルとの差）を表示。
 5. 右上の「ライバル」で DJ NAME を追加すると、一覧にライバルのEXスコアと差、集計に勝敗数が出る（並べ替え「ライバルとの差順」や、「条件」で負けている曲だけを出すこともできる）。
 
+6. 「履歴」タブで、INFINITAS を終了してアップロードした回ごとに、前回から変わった譜面（ランプ・DJ LEVEL・EXスコア・ミスカウント）を見られる。曲の詳細にも、その曲の推移（HISTORY）が出る。
+   履歴は GAS ではなく Google ドライブの公開フォルダ `INFINITAS履歴/<DJ名>/history.json` を Drive API（API キー）で読む。
+   history.json は PC 側の `save_history.py`（upload_on_exit.ps1 がアップロード成功後に呼ぶ）が tracker.tsv を前回と比べて書き足す。
+
 絞り込み条件は URL の `#` 以降に入るので、ブックマークしておけば同じ条件で開ける。
 例：`index.html?id=DJNAME#s=SP&lv=11,12&lamp=NO PLAY,FAILED,ASSIST CLEAR,EASY CLEAR,CLEAR`
 
