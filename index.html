@@ -34,7 +34,7 @@
 
 <main id="app" hidden>
   <nav class="tabs" id="viewTabs" role="tablist">
-    <button type="button" role="tab" data-view="list">一覧</button><button type="button" role="tab" data-view="folder">バージョン</button><button type="button" role="tab" data-view="ability">地力表</button><button type="button" role="tab" data-view="radar">レーダー</button><button type="button" role="tab" data-view="history">履歴</button>
+    <button type="button" role="tab" data-view="list">一覧</button><button type="button" role="tab" data-view="folder">バージョン</button><button type="button" role="tab" data-view="ability">地力表</button><button type="button" role="tab" data-view="radar">レーダー</button><button type="button" role="tab" data-view="rival">ライバル</button><button type="button" role="tab" data-view="history">履歴</button>
   </nav>
 
   <!-- 更新履歴（アップロードのたびに前回から変わった譜面。Google ドライブの history.json） -->
@@ -112,10 +112,6 @@
         <button type="button" data-preset="noexh">未EXH</button>
         <button type="button" data-preset="nofc">未FC</button>
       </span>
-      <label id="rivalFilterBox" hidden>ライバル
-        <select id="rivalSel"></select>
-        <select id="rivalResult"><option value="">勝敗すべて</option><option value="win">WIN</option><option value="lose">LOSE</option><option value="draw">EVEN</option></select>
-      </label>
       <button type="button" class="link" id="resetBtn">条件をリセット</button>
     </div>
   </section>
@@ -123,11 +119,23 @@
   <!-- バージョン（フォルダ）一覧。押すとその下に曲を開く -->
   <section class="folders" id="folderView" hidden></section>
 
+  <!-- ライバル（上の絞り込みが効く。下の一覧は選んだライバルとの比較） -->
+  <section class="rvView" id="rivalView" hidden>
+    <div class="rivalsum" id="rivalSum"></div>
+    <div class="frow" id="rivalCtl">
+      <span class="flabel">ライバル</span><select id="rivalSel" aria-label="比べるライバル"></select>
+      <div class="seg" id="rivalResSeg" role="radiogroup" aria-label="勝敗">
+        <button type="button" data-v="">すべて</button><button type="button" data-v="win">WIN</button><button type="button" data-v="lose">LOSE</button><button type="button" data-v="draw">EVEN</button>
+      </div>
+      <span class="muted"><b class="num" id="rvTotal">0</b> 譜面</span>
+    </div>
+    <p class="empty" id="rvNone" hidden>右上の「ライバル」から DJ NAME を追加すると、ここで比べられます。</p>
+  </section>
+
   <section class="summary" id="summary">
     <div class="sumhead"><b id="total">0</b> 譜面 <span class="muted" id="sumNote"></span></div>
     <div class="dist" id="lampDist"></div>
     <div class="dist" id="gradeDist"></div>
-    <div class="rivalsum" id="rivalSum"></div>
   </section>
 
   <section class="list" id="list" aria-live="polite"></section>

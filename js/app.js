@@ -38,9 +38,9 @@
 			if (p.has(k)) o[key] = p.get(k);
 		}
 		if (p.has("lock")) o.hideLocked = p.get("lock") === "0";
-		if (p.has("v")) o.view = { ab: "ability", fd: "folder", rd: "radar", hs: "history" }[p.get("v")] || "list";
+		if (p.has("v")) o.view = { ab: "ability", fd: "folder", rd: "radar", rl: "rival", hs: "history" }[p.get("v")] || "list";
 		if (p.has("abm")) o.abMode = p.get("abm") === "hard" ? "hard" : "nomage";
-		if (!["ability", "folder", "radar", "history"].includes(o.view)) o.view = "list";
+		if (!["ability", "folder", "radar", "rival", "history"].includes(o.view)) o.view = "list";
 		if (o.abMode !== "hard") o.abMode = "nomage";
 		return toFilter(o);
 	}
@@ -56,12 +56,13 @@
 		if (f.sort !== "level") p.set("sort", f.sort);
 		if (f.dir !== "asc") p.set("dir", f.dir);
 		if (f.hideLocked) p.set("lock", "0");
-		if (f.rival) p.set("rv", f.rival);
-		if (f.rivalResult) p.set("rr", f.rivalResult);
+		if (f.view === "rival" && f.rival) p.set("rv", f.rival);
+		if (f.view === "rival" && f.rivalResult) p.set("rr", f.rivalResult);
 		if (f.view === "ability") p.set("v", "ab");
 		if (f.view === "folder") p.set("v", "fd");
 		if (f.view === "radar") p.set("v", "rd");
 		if (f.view === "history") p.set("v", "hs");
+		if (f.view === "rival") p.set("v", "rl");
 		if (f.view === "folder" && f.fdOpen) p.set("fo", f.fdOpen);
 		if (f.abMode === "hard") p.set("abm", "hard");
 		const url = new URL(location.href);
@@ -162,9 +163,19 @@
 	}
 
 	// ---------- 絞り込み・描画 ----------
+	/** ライバルタブの絞り込み: 上の条件＋選んだライバルが遊んだ譜面＋勝敗。ほかのタブではライバルの条件は効かない */
+	function viewCharts() {
+		const f = state.f;
+		if (f.view !== "rival") return M.filter(state.charts, { ...f, rivalResult: "" });
+		if (!f.rival) return [];
+		return M.filter(state.charts, f).filter((c) => (c.rivals.find((r) => r.id === f.rival) || {}).played);
+	}
 	function apply() {
 		const f = state.f;
-		const base = M.filter(state.charts, f);
+		// ライバルタブは、選んでいなければ（または外したライバルなら）最初のライバルにする
+		if (!state.rivals.some((r) => r.id === f.rival)) { f.rival = state.rivals.length ? state.rivals[0].id : ""; }
+		if (f.view !== "rival" && f.sort === "rival") f.sort = "level"; // 「ライバルとの差順」はライバルタブだけ
+		const base = viewCharts();
 		state.view = M.sort(base, f.sort, f.dir, f.rival);
 		renderSummary();
 		$("#list").innerHTML = "";
@@ -175,6 +186,7 @@
 		renderControls();
 		renderAbility();
 		renderFolders();
+		renderRivalView();
 		renderPlayerRadar();
 		state.histSessions = M.historySessions(state.history, state.charts);
 		renderHistory();
@@ -409,10 +421,48 @@
 		}).join("");
 	}
 
+	// ---------- ライバル ----------
+	function renderRivalView() {
+		const f = state.f;
+		const on = f.view === "rival";
+		$("#rivalView").hidden = !on;
+		if (!on) return;
+		$("#summary").hidden = true;
+		const has = state.rivals.length > 0 && !state.guest;
+		$("#rvNone").hidden = has;
+		$("#rivalCtl").hidden = !has;
+		$("#empty").hidden = !has || state.view.length > 0;
+		if (!has) { $("#rivalSum").innerHTML = ""; return; }
+		// ライバルごとの勝敗（上の絞り込みだけを効かせた件数）。押すとそのライバルに切り替え
+		const rs = M.rivalSummary(M.filter(state.charts, { ...f, rivalResult: "" }), state.rivals.map((r) => r.id));
+		$("#rivalSum").innerHTML = rs.map((r) => `<button type="button" class="rsBtn" data-rival="${esc(r.id)}" aria-pressed="${r.id === f.rival}"><b class="num">${esc(r.id)}</b> に <span class="w">WIN ${r.win}</span> / <span class="l">LOSE ${r.lose}</span> / <span class="d">EVEN ${r.draw}</span></button>`).join("");
+		$("#rvTotal").textContent = state.view.length;
+	}
+	/** ライバルタブの1行: 自分とライバルの EX・クリアステータス、差と勝敗 */
+	function rivalRowHtml(c) {
+		const r = c.rivals.find((x) => x.id === state.f.rival) || {};
+		const cls = rivalCls(r);
+		const lampName = c.lamp === M.LOCKED ? "未解禁" : c.lamp;
+		const me = c.played ? `<span class="rvEx">${c.ex}</span>${rivalLampHtml(c.lamp)}` : `<span class="rvEx muted">-</span><span class="rvlamp muted">${esc(lampName)}</span>`;
+		return `<article class="item rvItem L-${cssKey(c.lamp)}" data-id="${esc(c.id)}" style="--lc:var(--l-${cssKey(c.lamp)});--dc:var(--d-${c.diff})">
+			<div class="lampbar" title="${esc(lampName)}"></div>
+			<div class="lv">${c.level}<small>${c.key}</small></div>
+			<div class="main">
+				<div class="title">${esc(c.title)}</div>
+				<div class="sub"><span class="num">BPM ${esc(c.bpm)}</span><span class="num">${c.notes} NOTES</span></div>
+			</div>
+			<div class="rvCmp num">
+				<span class="rvWho">${esc(state.id)}</span>${me}
+				<span class="rvWho">${esc(r.id || "")}</span><span class="rvEx">${r.ex ?? "-"}</span>${rivalLampHtml(r.lamp)}
+			</div>
+			<div class="rvRes ${cls}">${cls ? `<b>${RIVAL_RESULT[cls]}</b><span class="num">${r.diff > 0 ? "+" : ""}${r.diff}</span>` : ""}</div>
+		</article>`;
+	}
+
 	function renderMore() {
 		const next = state.view.slice(state.shown, state.shown + PAGE);
 		if (!next.length) return;
-		$("#list").insertAdjacentHTML("beforeend", next.map(rowHtml).join(""));
+		$("#list").insertAdjacentHTML("beforeend", next.map(state.f.view === "rival" ? rivalRowHtml : rowHtml).join(""));
 		state.shown += next.length;
 	}
 
@@ -469,12 +519,7 @@
 				${c.miss != null ? `<div class="rate">MISS COUNT ${c.miss}</div>` : ""}
 				<div class="lampname">${esc(lampName)}</div></div>`;
 		}
-		// 例: 「ST 3200 (+12) WIN HARD CLEAR」（勝敗は色と文字の両方で出す。クリアステータスはランプの色）
-		const rv = c.rivals.filter((r) => r.played).map((r) => {
-			const cls = rivalCls(r);
-			const diff = r.diff == null ? "" : ` (${r.diff > 0 ? "+" : ""}${r.diff}) <b>${RIVAL_RESULT[cls]}</b>`;
-			return `<span class="rvi"><span class="${cls}">${esc(r.id)} ${r.ex}${diff}</span>${rivalLampHtml(r.lamp)}</span>`;
-		}).join("");
+		// ライバルとの比較はライバルタブに出す（一覧がうるさくなるので、ここには出さない）
 		return `<article class="item L-${cssKey(c.lamp)}" data-id="${esc(c.id)}" style="--lc:var(--l-${cssKey(c.lamp)});--dc:var(--d-${c.diff})">
 			<div class="lampbar" title="${esc(lampName)}"></div>
 			<div class="lv">${c.level}<small>${c.key}</small></div>
@@ -485,7 +530,6 @@
 				${abilityHtml(c)}
 			</div>
 			<div class="score">${score}</div>
-			${rv ? `<div class="rv">${rv}</div>` : ""}
 		</article>`;
 	}
 
@@ -506,15 +550,13 @@
 		$("#total").textContent = state.view.length;
 		$("#sumNote").textContent = state.guest ? "（楽曲だけ表示中）" : (f.lamps.size || f.grades.size) ? `（ランプ・DJ LEVEL で絞り込み中。バーは絞り込み前の内訳）` : "";
 		if (state.guest) {
-			$("#lampDist").innerHTML = ""; $("#gradeDist").innerHTML = ""; $("#rivalSum").innerHTML = "";
+			$("#lampDist").innerHTML = ""; $("#gradeDist").innerHTML = "";
 			return;
 		}
 		const lampItems = [M.LOCKED, ...M.LAMPS].map((l) => ({ v: l, label: l === M.LOCKED ? "未解禁" : M.LAMP_SHORT[l], n: s1.lamps[l], color: `var(--l-${cssKey(l)})` }));
 		$("#lampDist").innerHTML = distHtml("lamp", lampItems, s1.total || 1, f.lamps);
 		const gradeItems = [...M.GRADES, "-"].map((g) => ({ v: g, label: g === "-" ? "未プレイ" : g, n: s2.grades[g], color: `var(--g-${g})` }));
 		$("#gradeDist").innerHTML = distHtml("grade", gradeItems, s2.total || 1, f.grades);
-		const rs = M.rivalSummary(state.view, state.rivals.map((r) => r.id));
-		$("#rivalSum").innerHTML = rs.map((r) => `<span><b class="num">${esc(r.id)}</b> に <span class="w">WIN ${r.win}</span> / <span class="l">LOSE ${r.lose}</span> / <span class="d">EVEN ${r.draw}</span></span>`).join("");
 	}
 
 	function renderControls() {
@@ -527,19 +569,17 @@
 		$("#dirBtn").title = f.dir === "asc" ? "昇順（クリックで降順）" : "降順（クリックで昇順）";
 		if ($("#q").value !== f.q) $("#q").value = f.q;
 		$("#hideLocked").checked = f.hideLocked;
-		const n = [f.hideLocked, f.lamps.size, f.grades.size, f.rivalResult].filter(Boolean).length;
+		const n = [f.hideLocked, f.lamps.size, f.grades.size].filter(Boolean).length;
 		$("#moreCount").textContent = n || "";
 		for (const b of document.querySelectorAll("[data-preset]")) b.setAttribute("aria-pressed", sameSet(f.lamps, presetLamps(b.dataset.preset)));
-		// ライバル
+		// ライバル（並べ替えの「ライバルとの差順」とライバルの選択はライバルタブだけ）
 		const hasRival = state.rivals.length > 0;
-		$("#rivalFilterBox").hidden = !hasRival;
-		$("#sort").querySelector('[value="rival"]').hidden = !hasRival;
+		$("#sort").querySelector('[value="rival"]').hidden = !(hasRival && f.view === "rival");
 		const rsel = $("#rivalSel");
-		const opts = `<option value="">-</option>` + state.rivals.map((r) => `<option>${esc(r.id)}</option>`).join("");
+		const opts = state.rivals.map((r) => `<option>${esc(r.id)}</option>`).join("");
 		if (rsel.innerHTML !== opts) rsel.innerHTML = opts;
 		rsel.value = f.rival;
-		$("#rivalResult").value = f.rivalResult;
-		$("#rivalResult").disabled = !f.rival;
+		for (const b of $("#rivalResSeg").children) b.setAttribute("aria-checked", b.dataset.v === f.rivalResult);
 		$("#rivalBtn").hidden = state.guest;
 	}
 
@@ -752,8 +792,9 @@
 		$("#dirBtn").addEventListener("click", () => { f().dir = f().dir === "asc" ? "desc" : "asc"; apply(); });
 		$("#moreBtn").addEventListener("click", () => { const ex = $("#extra"); ex.hidden = !ex.hidden; $("#moreBtn").setAttribute("aria-expanded", !ex.hidden); });
 		$("#hideLocked").addEventListener("change", (e) => { f().hideLocked = e.target.checked; apply(); });
-		$("#rivalSel").addEventListener("change", (e) => { f().rival = e.target.value; if (!f().rival) f().rivalResult = ""; apply(); });
-		$("#rivalResult").addEventListener("change", (e) => { f().rivalResult = e.target.value; apply(); });
+		$("#rivalSel").addEventListener("change", (e) => { f().rival = e.target.value; apply(); });
+		$("#rivalResSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().rivalResult = b.dataset.v; apply(); } });
+		$("#rivalSum").addEventListener("click", (e) => { const b = e.target.closest("[data-rival]"); if (b) { f().rival = b.dataset.rival; apply(); } });
 		document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => {
 			const set = presetLamps(b.dataset.preset);
 			f().lamps = sameSet(f().lamps, set) ? new Set() : set;
