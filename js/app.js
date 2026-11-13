@@ -475,9 +475,10 @@
 	/** 最大項目に付ける★の色（ゲームでは項目の色ではなく黄色っぽい星） */
 	const RADAR_STAR = "#ffe066";
 	const radarTop = (r) => Object.keys(RADAR_COLOR).reduce((a, b) => ((Number(r[b]) || 0) > (Number(r[a]) || 0) ? b : a));
-	function radarMiniHtml(c) {
+	/** extra はレーダーの枠の右に並べる HTML（地力タグ） */
+	function radarMiniHtml(c, extra = "") {
 		const r = c.radar;
-		if (!r) return "";
+		if (!r) return extra;
 		const entries = Object.keys(RADAR_SHORT).map((k) => ({ key: k, label: RADAR_SHORT[k], v: Number(r[k]) || 0 }));
 		const top = radarTop(r);
 		// 上の行に項目名（全項目その項目の色。最大の項目は前に黄色の★）、下の行に数値。HELL の札は一覧には出さない（詳細のチャートだけ）
@@ -487,7 +488,7 @@
 				: `<span class="rl" style="color:${RADAR_COLOR[key]}">${label}</span>`;
 			return `<span class="ri">${name}<span class="rv">${v % 1 === 0 ? v : v.toFixed(2)}</span></span>`;
 		});
-		return `<div class="radarRow"><div class="radarBox num">${parts.join("")}</div></div>`;
+		return `<div class="radarRow"><div class="radarBox num">${parts.join("")}</div>${extra}</div>`;
 	}
 	function tierClass(tier) {
 		const m = /([SABCDEF]\+?)$/.exec(tier || "");
@@ -526,8 +527,7 @@
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
 				<div class="sub"><span class="num">BPM ${esc(c.bpm)}</span><span class="num">${c.notes} NOTES</span>${c.mv ? `<a class="mv" href="${esc(c.mv)}" target="_blank" rel="noopener">▶ 動画</a>` : ""}</div>
-				${radarMiniHtml(c)}
-				${abilityHtml(c)}
+				${radarMiniHtml(c, abilityHtml(c))}
 			</div>
 			<div class="score">${score}</div>
 		</article>`;

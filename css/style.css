@@ -249,6 +249,14 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .radarBox .rv { color: var(--text); font-size: 12px; }
 @media (max-width: 640px) { .radarBox { grid-template-columns: repeat(3, auto); } }
 .abilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
+/* レーダーの枠の右に、上に N地力・下に H地力 */
+.radarRow .abilityRow { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; margin-top: 0; }
+.abilityRow .tag { white-space: nowrap; }
+/* スマホは右に入る幅がないので、レーダーの下に横並び */
+@media (max-width: 640px) {
+  .radarRow { flex-wrap: wrap; }
+  .radarRow .abilityRow { flex-direction: row; }
+}
 .tag.tier-Sp { color: #ff3b3b; border: 1px solid #ff3b3b; }
 .tag.tier-S { color: #ff8a3d; border: 1px solid #ff8a3d; }
 .tag.tier-Ap { color: #ffd400; border: 1px solid #ffd400; }
