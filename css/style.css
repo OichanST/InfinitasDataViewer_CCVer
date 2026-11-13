@@ -251,7 +251,8 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .abilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
 /* レーダーの枠の右に、上に N地力・下に H地力 */
 .radarRow .abilityRow { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; margin-top: 0; }
-.abilityRow .tag { white-space: nowrap; }
+/* 地力タグは A+ でも E でも個人差でも同じ大きさ（一番長い「H個人差S+」に合わせた固定幅） */
+.abilityRow .tag { white-space: nowrap; display: inline-block; box-sizing: border-box; width: 6.4em; text-align: center; margin-left: 0; vertical-align: middle; }
 /* スマホは右に入る幅がないので、レーダーの下に横並び */
 @media (max-width: 640px) {
   .radarRow { flex-wrap: wrap; }
@@ -283,6 +284,7 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .L-HARD_CLEAR .lampname { color: var(--lt-HARD_CLEAR); }
 .item .score > div:last-child { white-space: nowrap; }
 .item .score > .lampname:only-child { grid-column: 1 / -1; }
+.item .score .lampname { font-size: 13px; } /* 一覧のクリア状況だけ少し大きく（2026-11-13 ユーザー指定） */
 .rv { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; margin-top: 4px; }
 .rv .w, .dtable .w { color: #ffd400; } .rv .l, .dtable .l { color: #3fa9ff; } .rv .d, .dtable .d { color: #46d160; }
 /* ライバル1人分（スコア・差・WIN/LOSE/EVEN の後ろにクリアステータス） */
