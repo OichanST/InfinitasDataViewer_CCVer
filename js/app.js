@@ -332,6 +332,11 @@
 		const tag = (label, title, tier) => tier ? `<span class="tag tier-${tierClass(tier)}" title="${esc(title)} ${esc(tier)}">${esc(label)}${esc(tier)}</span>` : "";
 		return `<div class="abilityRow">${tag("N", "ノマゲ", nomage)}${tag("H", "ハード", hard)}</div>`;
 	}
+	/** ライバルとの勝敗（w=勝ち l=負け d=同点、自分が未プレイなら ""）と表示名 */
+	const rivalCls = (r) => r.diff == null ? "" : r.diff > 0 ? "w" : r.diff < 0 ? "l" : "d";
+	const RIVAL_RESULT = { w: "WIN", l: "LOSE", d: "EVEN" };
+	/** ライバルのクリアステータス（ランプと同じ色の文字） */
+	const rivalLampHtml = (lamp) => lamp ? `<span class="rvlamp" style="color:var(--lt-${cssKey(lamp)}, var(--l-${cssKey(lamp)}))">${esc(lamp)}</span>` : "";
 	function rowHtml(c) {
 		const lampName = c.lamp === M.LOCKED ? "未解禁" : c.lamp;
 		let score = `<span class="lampname">${esc(lampName)}</span>`;
@@ -343,10 +348,11 @@
 				${c.miss != null ? `<div class="rate">MISS COUNT ${c.miss}</div>` : ""}
 				<div class="lampname">${esc(lampName)}</div></div>`;
 		}
+		// 例: 「ST 3200 (+12) WIN HARD CLEAR」（勝敗は色と文字の両方で出す。クリアステータスはランプの色）
 		const rv = c.rivals.filter((r) => r.played).map((r) => {
-			const cls = r.diff == null ? "" : r.diff > 0 ? "w" : r.diff < 0 ? "l" : "d";
-			const diff = r.diff == null ? "" : ` (${r.diff > 0 ? "+" : ""}${r.diff})`;
-			return `<span class="${cls}">${esc(r.id)} ${r.ex}${diff}</span>`;
+			const cls = rivalCls(r);
+			const diff = r.diff == null ? "" : ` (${r.diff > 0 ? "+" : ""}${r.diff}) <b>${RIVAL_RESULT[cls]}</b>`;
+			return `<span class="rvi"><span class="${cls}">${esc(r.id)} ${r.ex}${diff}</span>${rivalLampHtml(r.lamp)}</span>`;
 		}).join("");
 		return `<article class="item L-${cssKey(c.lamp)}" data-id="${esc(c.id)}" style="--lc:var(--l-${cssKey(c.lamp)});--dc:var(--d-${c.diff})">
 			<div class="lampbar" title="${esc(lampName)}"></div>
@@ -387,7 +393,7 @@
 		const gradeItems = [...M.GRADES, "-"].map((g) => ({ v: g, label: g === "-" ? "未プレイ" : g, n: s2.grades[g], color: `var(--g-${g})` }));
 		$("#gradeDist").innerHTML = distHtml("grade", gradeItems, s2.total || 1, f.grades);
 		const rs = M.rivalSummary(state.view, state.rivals.map((r) => r.id));
-		$("#rivalSum").innerHTML = rs.map((r) => `<span><b class="num">${esc(r.id)}</b> に <span class="w">勝ち ${r.win}</span> / <span class="l">負け ${r.lose}</span> / <span class="d">引き分け ${r.draw}</span></span>`).join("");
+		$("#rivalSum").innerHTML = rs.map((r) => `<span><b class="num">${esc(r.id)}</b> に <span class="w">WIN ${r.win}</span> / <span class="l">LOSE ${r.lose}</span> / <span class="d">EVEN ${r.draw}</span></span>`).join("");
 	}
 
 	function renderControls() {
@@ -492,7 +498,12 @@
 		const s = c.song;
 		const rivalHead = state.rivals.map((r) => `<th>${esc(r.id)}</th>`).join("");
 		const rows = same.map((x) => {
-			const rv = x.rivals.map((r) => `<td class="num">${r.played ? `${r.ex}${r.diff != null ? ` <span class="${r.diff > 0 ? "w" : r.diff < 0 ? "l" : "d"}">(${r.diff > 0 ? "+" : ""}${r.diff})</span>` : ""}` : "-"}</td>`).join("");
+			const rv = x.rivals.map((r) => {
+				if (!r.played) return `<td class="num">-</td>`;
+				const cls = rivalCls(r);
+				const diff = r.diff != null ? ` <span class="${cls}">(${r.diff > 0 ? "+" : ""}${r.diff}) <b>${RIVAL_RESULT[cls]}</b></span>` : "";
+				return `<td class="num">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
+			}).join("");
 			return `<tr class="${x.id === c.id ? "cur" : ""}" style="--dc:var(--d-${x.diff})">
 				<td class="lvcell">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
 				<td class="num">${x.notes}</td><td class="num">${esc(x.bpm)}</td>

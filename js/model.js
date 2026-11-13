@@ -262,16 +262,19 @@ IV.model = (() => {
 	/**
 	 * プレイヤーのノーツレーダー。項目ごとに「譜面のレーダー値 × スコアレート（EX ÷ (ノーツ数×2)）」を計算し、
 	 * 上位10譜面の平均をその項目の値にする（SP/DP は別々に計算）。
+	 * 同じ曲の譜面は一番高いもの1つだけ数える（SPH と SPA が両方上位にいても1件。2026-11-12 実機と照合して確認）。
 	 * 戻り値: { NOTES: { value, top: [{ c, radar, rate, score }] }, … }
 	 */
 	function playerRadar(charts, style, n = 10) {
 		const played = charts.filter((c) => c.style === style && c.played && c.radar && c.notes > 0);
 		const out = {};
 		for (const f of RADAR_FIELDS) {
+			const seen = new Set();
 			const list = played
 				.map((c) => { const radar = Number(c.radar[f]) || 0; return { c, radar, rate: c.rate, score: floor2(radar * c.rate) }; })
 				.filter((x) => x.score > 0)
 				.sort((a, b) => b.score - a.score)
+				.filter((x) => !seen.has(x.c.title) && seen.add(x.c.title))
 				.slice(0, n);
 			// 端数は四捨五入ではなく切り捨て（実機と照合済み）。譜面ごとの値も平均も小数2桁で切り捨て。誤差を避けるため 1/100 単位の整数で計算
 			const sum = list.reduce((s, x) => s + Math.round(x.score * 100), 0);
@@ -301,15 +304,18 @@ IV.model = (() => {
 			const top = pr[f].top;
 			const border = top.length < 10 ? 0 : top[top.length - 1].score;
 			const inTop = new Set(top.map((x) => x.c.id));
+			const songTop = new Map(top.map((x) => [x.c.title, x.score]));
 			const list = [];
 			for (const c of mine) {
 				if (inTop.has(c.id)) continue;
 				const radar = Number(c.radar[f]) || 0;
 				if (!radar) continue;
+				// 同じ曲の別譜面が上位にいるなら、それを超えないと値は上がらない（1曲1譜面のため）
+				const bar = songTop.has(c.title) ? songTop.get(c.title) : border;
 				const expRate = Math.max(c.played ? c.rate : 0, typical(c.level));
 				const exp = radar * expRate;
-				if (exp <= border) continue;
-				list.push({ c, radar, expRate, needRate: border / radar, gain: (exp - border) / 10 });
+				if (exp <= bar) continue;
+				list.push({ c, radar, expRate, needRate: bar / radar, gain: (exp - bar) / 10 });
 			}
 			list.sort((a, b) => b.gain - a.gain);
 			out[f] = { border, list: list.slice(0, n) };
@@ -330,12 +336,14 @@ IV.model = (() => {
 			const top = pr[f].top;
 			const border = top.length < 10 ? 0 : top[top.length - 1].score;
 			const inTop = new Set(top.map((x) => x.c.id));
+			const songTop = new Map(top.map((x) => [x.c.title, x.score]));
 			const list = [];
 			for (const c of cleared) {
 				if (inTop.has(c.id)) continue;
 				const radar = Number(c.radar[f]) || 0;
 				if (!radar) continue;
-				const needRate = border / radar;
+				// 同じ曲の別譜面が上位にいるなら、それを超えないと値は上がらない（1曲1譜面のため）
+				const needRate = (songTop.has(c.title) ? songTop.get(c.title) : border) / radar;
 				if (needRate > 1) continue; // MAX でも届かない
 				// ボーダーを「超える」のに必要な EX スコア（同点では入れ替わらない）
 				const needEx = Math.floor(needRate * c.notes * 2) + 1 - c.ex;

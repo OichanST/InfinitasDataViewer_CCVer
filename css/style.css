@@ -218,7 +218,10 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .item .score > div:last-child { white-space: nowrap; }
 .item .score > .lampname:only-child { grid-column: 1 / -1; }
 .rv { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; margin-top: 4px; }
-.rv .w { color: #ffd400; } .rv .l { color: #3fa9ff; } .rv .d { color: #46d160; }
+.rv .w, .dtable .w { color: #ffd400; } .rv .l, .dtable .l { color: #3fa9ff; } .rv .d, .dtable .d { color: #46d160; }
+/* ライバル1人分（スコア・差・WIN/LOSE/EVEN の後ろにクリアステータス） */
+.rvi { display: inline-flex; align-items: baseline; gap: 6px; }
+.rvlamp { font-size: 11px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
 .mv { color: var(--accent); text-decoration: none; font-size: 12px; }
 .empty { text-align: center; color: var(--muted); padding: 40px; }
 #sentinel { height: 1px; }
