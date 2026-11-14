@@ -174,6 +174,20 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 
 /* 地力表 */
 .ability { padding: 10px 0; }
+/* 地力表の上の「次に狙う」 */
+.abCand { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.abcTable th:first-child, .abcTable th:nth-child(2), .abcTable th:nth-child(3), .abcTable .abcTier, .abcTable .abcLamp { text-align: left; }
+.abcTable .abcTier .tag { margin-left: 0; font-size: 11px; padding: 0 5px; }
+.abcMore { display: block; width: 100%; margin-top: 6px; padding: 4px; font-size: 12px; color: var(--muted); background: transparent; border: 1px dashed var(--line); border-radius: 6px; cursor: pointer; }
+.abcMore:hover { color: var(--text); border-color: var(--muted); }
+/* スマホ: 上に曲名、下に地力・ランプ・MISS COUNT */
+@media (max-width: 640px) {
+  .abcTable thead { display: none; }
+  .abcTable tbody tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 10px; align-items: center; padding: 4px 2px; border-top: 1px solid var(--line); }
+  .abcTable td { border-top: 0; padding: 0; }
+  .abcTable .prTitle { grid-column: 1 / -1; max-width: none; width: auto; margin-bottom: 2px; }
+  .abcTable td.num::before { content: "MISS "; color: var(--muted); font-size: 10px; }
+}
 #abTotal b { font: 16px var(--num); color: var(--text); }
 .abGroup { margin-top: 14px; }
 .abHead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; }

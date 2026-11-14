@@ -389,6 +389,22 @@
 	}
 
 	// ---------- 地力表 ----------
+	/** 地力表の上の「次に狙う」欄。最初は10譜面、「もっと見る」で10譜面ずつ増やす（state.abCandN） */
+	function abCandHtml(list, mode, goal) {
+		const n = state.abCandN || 10;
+		const head = mode === "hard" ? "H" : "N";
+		const rows = list.slice(0, n).map(({ c, tier }) => `<tr data-id="${esc(c.id)}">
+			<td class="prTitle"><span class="lvb" style="--dc:var(--d-${c.diff})">${c.level}<small>${esc(c.key)}</small></span>${esc(c.title)}</td>
+			<td class="abcTier"><span class="tag tier-${tierClass(tier)}">${head}${esc(tier)}</span></td>
+			<td class="abcLamp">${lampHtml(c.lamp)}</td>
+			<td class="num">${c.miss == null ? "-" : c.miss}</td>
+		</tr>`).join("");
+		const more = list.length > n ? `<button type="button" class="abcMore">もっと見る（残り ${list.length - n}）</button>` : "";
+		return `<section class="abCand"><div class="prRecHead">次に狙う <span class="muted">（${esc(goal)} 未達成の譜面を、${head}地力の低い順・同じランクは MISS COUNT の少ない順に）</span></div>
+			${list.length ? `<table class="prTable abcTable"><thead><tr><th>譜面</th><th>${head}地力</th><th>ランプ</th><th>MISS COUNT</th></tr></thead><tbody>${rows}</tbody></table>${more}`
+				: `<p class="muted hNone">遊んだ譜面で ${esc(goal)} 未達成のものはありません</p>`}
+		</section>`;
+	}
 	function renderAbility() {
 		const f = state.f;
 		const isAb = f.view === "ability";
@@ -403,6 +419,7 @@
 		const done = groups.reduce((n, g) => n + g.done, 0);
 		$("#abTotal").innerHTML = total && !state.guest ? `${esc(goal)} 以上 <b class="num">${done}</b> / <span class="num">${total}</span>` : "";
 		$("#abEmpty").hidden = total > 0;
+		$("#abCand").innerHTML = state.guest || !total ? "" : abCandHtml(M.abilityCandidates(state.charts, f.abMode), f.abMode, goal);
 		$("#abGroups").innerHTML = groups.map((g) => {
 			const s = M.summarize(g.items);
 			const bar = state.guest ? "" : `<div class="bar abBar">${[...M.LAMPS].reverse().concat(M.LOCKED).filter((l) => s.lamps[l] > 0).map((l) =>
@@ -769,7 +786,11 @@
 			tip.style.top = (e.clientY - box.top + 12) + "px";
 		});
 		$("#histBody").addEventListener("mouseleave", () => { const tip = $("#histBody .hcTip"); if (tip) tip.hidden = true; });
-		$("#abModeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().abMode = b.dataset.v; apply(); } });
+		$("#abModeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().abMode = b.dataset.v; state.abCandN = 10; apply(); } });
+		$("#abCand").addEventListener("click", (e) => {
+			if (e.target.closest(".abcMore")) { state.abCandN = (state.abCandN || 10) + 10; renderAbility(); return; }
+			const tr = e.target.closest("tr[data-id]"); if (tr) openDetail(tr.dataset.id);
+		});
 		// フォルダ: 押すと中身を開く／閉じる、曲を押すと詳細
 		$("#folderView").addEventListener("click", (e) => {
 			if (e.target.closest("a")) return;

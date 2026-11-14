@@ -256,6 +256,25 @@ IV.model = (() => {
 			}));
 	}
 
+	/**
+	 * 地力表の「次に狙う」候補。遊んだことがあり、まだ目標（ノマゲ=EASY CLEAR、ハード=HARD CLEAR）に届いていない譜面を、
+	 * 地力ランクの低い順（地力と個人差は同じランクなら混ぜる）、同じランクなら MISS COUNT の少ない順に並べる。
+	 * 「未定」の譜面と未プレイ（MISS COUNT が無いので比べられない）は入れない。
+	 * 戻り値: [{ c, tier }]
+	 */
+	function abilityCandidates(charts, mode) {
+		const col = mode === "hard" ? "HARD_TIER" : "NOMAGE_TIER";
+		const goal = LAMPS.indexOf(ABILITY_GOAL[mode] || ABILITY_GOAL.nomage);
+		const rankOf = (t) => { const m = /^(?:地力|個人差)([SABCDEF]\+?)$/.exec(t); return m ? ABILITY_RANKS.indexOf(m[1]) : -1; };
+		const miss = (c) => (c.miss == null ? Infinity : c.miss);
+		return charts
+			.filter((c) => c.ability && c.played && c.lampIdx < goal)
+			.map((c) => { const tier = String(c.ability[col] || "").trim(); return { c, tier, rank: rankOf(tier) }; })
+			.filter((x) => x.rank >= 0)
+			// ABILITY_RANKS は上（S+）から並んでいるので、番号が大きいほど低いランク
+			.sort((a, b) => b.rank - a.rank || miss(a.c) - miss(b.c) || collator.compare(sortTitle(a.c), sortTitle(b.c)));
+	}
+
 	const RADAR_FIELDS = ["NOTES", "PEAK", "SCRATCH", "SOF-LAN", "CHARGE", "CHORD"];
 	/** 小数2桁で切り捨て（浮動小数の誤差で 1.23 が 1.2299999… になって 1.22 に落ちないよう微小値を足す） */
 	const floor2 = (v) => Math.floor(v * 100 + 1e-6) / 100;
@@ -387,5 +406,5 @@ IV.model = (() => {
 		return sessions.sort((a, b) => b.at - a.at);
 	}
 
-	return { historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups };
+	return { historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
 })();
