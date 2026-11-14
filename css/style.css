@@ -137,6 +137,19 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .hTable .hLamp { text-align: left; }
 .hUp { color: #7ee36b; } .hDown { color: #ff6b6b; }
 .hNone { margin: 4px 0 0; font-size: 12px; }
+/* スマホ: 1譜面を2段に（上に曲名、下にランプ・DJ LEVEL・EX SCORE・MISS COUNT）。横スクロールなしで全部見える */
+@media (max-width: 640px) {
+  .hTable { min-width: 0; }
+  .hTable thead { display: none; }
+  .hTable tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; column-gap: 10px; align-items: baseline; padding: 4px 2px; border-top: 1px solid var(--line); }
+  .hTable td { border-top: 0; padding: 0; }
+  .hTable .prTitle { grid-column: 1 / -1; max-width: none; width: auto; margin-bottom: 2px; }
+  .hTable td.num::before { display: block; color: var(--muted); font: 9px var(--num); text-align: right; }
+  .hTable td:nth-child(3)::before { content: "DJ LEVEL"; }
+  .hTable td:nth-child(4)::before { content: "EX SCORE"; }
+  .hTable td:nth-child(5)::before { content: "MISS"; }
+  .hTable .hLamp { white-space: normal; align-self: end; }
+}
 .dhist { margin-top: 14px; }
 /* 日ごとの成果グラフ（色は dataviz の既定パレット 1・2 番、背景に対して検証済み） */
 .hChart { --h-lamp: #3987e5; --h-ex: #d95926; position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
