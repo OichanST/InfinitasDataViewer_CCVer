@@ -264,14 +264,12 @@
 		$("#historyView").hidden = !on;
 		if (!on) return;
 		for (const b of $("#histStyleSeg").children) b.setAttribute("aria-checked", b.dataset.v === f.style);
-		$("#histNote").textContent = "";
 		if (state.guest) { $("#histBody").innerHTML = `<p class="empty">プレイリザルトを読み込むと表示されます。</p>`; return; }
 		const sessions = state.histSessions || [];
 		if (!sessions.length) {
 			$("#histBody").innerHTML = `<p class="empty">まだ履歴がありません。INFINITAS を終了してアップロードされると、ここに出ます。</p>`;
 			return;
 		}
-		$("#histNote").textContent = "INFINITAS を終了してアップロードした回ごとに、前回から変わった譜面";
 		$("#histBody").innerHTML = histChartHtml(sessions, f.style) + sessions.map((s) => {
 			const when = `<span class="num">${timeText(s.at)}</span>`;
 			if (s.baseline) {
