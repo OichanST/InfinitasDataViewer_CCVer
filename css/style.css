@@ -136,6 +136,7 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .hTable th:first-child, .hTable th:nth-child(2) { text-align: left; }
 .hTable .hLamp { text-align: left; }
 .hUp { color: #7ee36b; } .hDown { color: #ff6b6b; }
+.hTable th:nth-child(3), .hTable td.hGrade, .dhist .dtable th:nth-child(4), .dhist .dtable td.hGrade { text-align: center; }
 .hNone { margin: 4px 0 0; font-size: 12px; }
 /* スマホ: 1譜面を2段に（上に曲名、下にランプ・DJ LEVEL・EX SCORE・MISS COUNT）。横スクロールなしで全部見える */
 @media (max-width: 640px) {
@@ -146,6 +147,7 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
   .hTable .prTitle { grid-column: 1 / -1; max-width: none; width: auto; margin-bottom: 2px; }
   .hTable td.num::before { display: block; color: var(--muted); font: 9px var(--num); text-align: right; }
   .hTable td:nth-child(3)::before { content: "DJ LEVEL"; }
+  .hTable td.hGrade::before { text-align: center; }
   .hTable td:nth-child(4)::before { content: "EX SCORE"; }
   .hTable td:nth-child(5)::before { content: "MISS"; }
   .hTable .hLamp { white-space: normal; align-self: end; }

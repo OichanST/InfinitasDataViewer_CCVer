@@ -201,9 +201,9 @@
 		const lamp = !b || b.lamp !== a.lamp ? `${lampHtml(b ? b.lamp : "NO PLAY")} <span class="muted">→</span> ${lampHtml(a.lamp)}` : `<span class="muted">${esc(a.lamp)}</span>`;
 		const g = (v) => v.grade ? `<span style="color:var(--g-${v.grade})">${v.grade}</span>` : "";
 		const grade = !a.grade ? "" : b && b.grade && b.grade !== a.grade ? `${g(b)} <span class="muted">→</span> ${g(a)}` : g(a);
-		const ex = `${a.ex}${b && x.exDiff ? ` <span class="${x.exDiff > 0 ? "hUp" : "hDown"}">${signed(x.exDiff)}</span>` : ""}`;
-		const miss = a.miss == null ? "-" : `${a.miss}${x.missDiff ? ` <span class="${x.missDiff < 0 ? "hUp" : "hDown"}">${signed(x.missDiff)}</span>` : ""}`;
-		return `<td class="hLamp">${lamp}</td><td class="num">${grade}</td><td class="num">${ex}</td><td class="num">${miss}</td>`;
+		const ex = `${a.ex}${b && x.exDiff ? `<span class="${x.exDiff > 0 ? "hUp" : "hDown"}">(${signed(x.exDiff)})</span>` : ""}`;
+		const miss = a.miss == null ? "-" : `${a.miss}${x.missDiff ? `<span class="${x.missDiff < 0 ? "hUp" : "hDown"}">(${signed(x.missDiff)})</span>` : ""}`;
+		return `<td class="hLamp">${lamp}</td><td class="num hGrade">${grade}</td><td class="num">${ex}</td><td class="num">${miss}</td>`;
 	}
 	const dayKey = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 	/**
