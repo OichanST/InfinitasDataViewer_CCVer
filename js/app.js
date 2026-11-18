@@ -13,7 +13,7 @@
 	const state = {
 		id: "", guest: false,
 		music: null, rivals: [], // rivals: [{ id, csv: ドライブのスコア CSV }]
-		mv: null, // MV リンク（GAS のリザルトから。M.mvMap の結果）
+		videos: null, // YouTube のアップロード動画 [{ id, title, at }]（MV。DJ ごとに正規 / 正規以外を選んで譜面に割り当てる）
 		charts: [], view: [], shown: 0,
 		radarMap: new Map(),
 		abilityMap: new Map(),
@@ -101,10 +101,20 @@
 	/**
 	 * 自分とライバルのリザルトは e-amusement のスコア CSV から作る（GAS のスコアは使わない）。
 	 * 自分の CSV はこのブラウザで読み込んだもの、なければドライブの INFINITAS履歴/<DJ名>/latest.csv。
-	 * GAS の getPlayResult は MV リンクのためだけに読む
+	 * MV は YouTube の動画をタイトルで譜面に割り当てる（1譜面に何本でも）
 	 */
+	let mvCache = null;
+	function myVideos() {
+		const kind = IV.api.youtubeKind(state.id);
+		if (!kind || !state.videos || !state.music) return null;
+		if (mvCache && mvCache.music === state.music && mvCache.videos === state.videos && mvCache.kind === kind) return mvCache.map;
+		const { map, skipped } = M.videoMap(state.music, state.videos, kind);
+		if (skipped.length) console.warn("譜面に割り当てられなかった動画:", skipped);
+		mvCache = { music: state.music, videos: state.videos, kind, map };
+		return map;
+	}
 	const csvResults = (csv) => {
-		const { results, unmatched } = M.applyScoreCsv(state.music, state.mv, csv);
+		const { results, unmatched } = M.applyScoreCsv(state.music, myVideos(), csv);
 		if (unmatched.length) console.warn("楽曲データに見つからなかった CSV の曲:", unmatched);
 		return results;
 	};
@@ -166,12 +176,14 @@
 				redraw();
 				throw e;
 			}));
-			// MV リンク（GAS のリザルトから MV だけ使う）。読めなくてもほかの表示には影響させない
-			tasks.push(IV.api.loadResult(id, (data) => {
-				if (state.id !== id || !Array.isArray(data)) return;
-				state.mv = M.mvMap(data);
-				redraw();
-			}, { force }).catch((e) => console.warn("MV リンクを読み込めませんでした", e)));
+			// MV（YouTube の動画一覧）。MV を出す DJ だけ。読めなくてもほかの表示には影響させない
+			if (IV.api.youtubeKind(id)) {
+				tasks.push(IV.api.loadYoutube((data) => {
+					if (state.id !== id || !Array.isArray(data)) return;
+					state.videos = data;
+					redraw();
+				}, { force }).catch((e) => console.warn("MV（YouTube）を読み込めませんでした", e)));
+			}
 			for (const rv of state.rivals) {
 				tasks.push(IV.api.loadDriveCsv(rv.id, (data) => { rv.csv = data ? data.csv : null; redraw(); }, { force })
 					.catch((e) => toast(`${rv.id} のスコア CSV を読み込めませんでした`)));
@@ -705,6 +717,15 @@
 			</svg>
 		</div>`;
 	}
+	/** 詳細の動画の列: 新しい順に「▶ ランプ 日付」。ランプが分からない動画は「▶ 動画」 */
+	function videosHtml(videos) {
+		return (videos || []).map((v) => {
+			const d = new Date(v.at);
+			const date = isNaN(d) ? "" : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+			const lamp = v.lamp ? `<span style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span>` : "動画";
+			return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}">▶ ${lamp} <span class="muted">${date}</span></a>`;
+		}).join("");
+	}
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
 		if (!c) return;
@@ -725,7 +746,7 @@
 				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.played ? `${x.ex}<span class="muted"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.miss ?? "-"}</td>${state.csv ? `<td class="num"${x.lastPlay ? ` title="最終プレー ${esc(x.lastPlay)}"` : ""}>${x.plays || "-"}${x.lastPlay ? `<div class="muted dlast">${esc(csvTime(x.lastPlay))}</div>` : ""}</td>` : ""}
-				<td class="mvcell">${x.mv ? `<a class="mv" href="${esc(x.mv)}" target="_blank" rel="noopener">▶ 動画</a>` : ""}</td>${rv}
+				<td class="mvcell">${videosHtml(x.videos)}</td>${rv}
 			</tr>`;
 		}).join("");
 		$("#detailBody").innerHTML = `
@@ -753,7 +774,7 @@
 	function start(id, guest) {
 		state.id = guest ? "" : id;
 		state.guest = guest;
-		state.mv = null;
+		state.videos = null;
 		state.history = null;
 		state.csvLocal = state.csvDrive = state.csv = null;
 		state.csvChecked = false;
@@ -783,7 +804,7 @@
 			await IV.api.saveCsv(id, { name: file.name, csv });
 			state.csvLocal = { name: file.name, csv, at: Date.now() };
 			setCsv();
-			const n = state.music ? M.applyScoreCsv(state.music, state.mv, csv).unmatched.length : 0;
+			const n = state.music ? M.applyScoreCsv(state.music, myVideos(), csv).unmatched.length : 0;
 			toast(`CSV を読み込みました（${csv.songs.length} 曲${n ? `、${n} 曲は楽曲データに見つかりません` : ""}）`);
 			syncText();
 			renderCsvDlg();

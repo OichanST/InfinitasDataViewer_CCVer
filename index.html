@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kdam+Thmor+Pro&family=Saira+Semi+Expanded:wght@500;600&family=M+PLUS+1p:wght@500&display=swap" rel="stylesheet">
 <!-- JS/CSS を変えたら ?v= の番号を上げる（ブラウザに古いファイルが残って新旧が混ざるのを防ぐ） -->
-<link rel="stylesheet" href="css/style.css?v=20261118e">
+<link rel="stylesheet" href="css/style.css?v=20261118f">
 </head>
 <body>
 <header class="top">
@@ -165,7 +165,7 @@
 <dialog id="csvDlg">
   <h2>スコア CSV</h2>
   <p class="hint">e-amusement の「スコアデータ CSV ダウンロード」で取れる <code>_sp_score.csv</code> から、プレイリザルト（SP）を表示します。<br>
-    Google ドライブの <code>INFINITAS履歴/DJ名/latest.csv</code> として置けば、どの端末からでも読みます。下のボタンやドラッグ＆ドロップで読み込んだ CSV は、このブラウザだけで使い、ドライブのものより優先します。<br>レベル・ノーツ数などの楽曲データと MV リンクは、Google スプレッドシートから読みます。</p>
+    Google ドライブの <code>INFINITAS履歴/DJ名/latest.csv</code> として置けば、どの端末からでも読みます。下のボタンやドラッグ＆ドロップで読み込んだ CSV は、このブラウザだけで使い、ドライブのものより優先します。<br>レベル・ノーツ数などの楽曲データは Google スプレッドシート、動画は YouTube から読みます。</p>
   <p id="csvStatus"></p>
   <div class="row">
     <label class="filebtn">ファイルを選ぶ<input type="file" id="csvFile" accept=".csv,text/csv" hidden></label>
@@ -179,8 +179,8 @@
 
 <footer class="foot"><span id="version"></span></footer>
 
-<script src="js/api.js?v=20261118e"></script>
-<script src="js/model.js?v=20261118e"></script>
-<script src="js/app.js?v=20261118e"></script>
+<script src="js/api.js?v=20261118f"></script>
+<script src="js/model.js?v=20261118f"></script>
+<script src="js/app.js?v=20261118f"></script>
 </body>
 </html>

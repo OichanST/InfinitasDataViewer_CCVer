@@ -7,8 +7,8 @@ beatmania IIDX INFINITAS のプレイリザルト（クリアランプ・EXス�
   `snapshots/` に日時の名前（`2026-11-17_2143.csv`）で置く CSV は履歴用の控えで、ビューアは読まない。
   右上の「CSV」ボタンやドラッグ＆ドロップで読み込むと、そのブラウザだけでドライブのものより優先して使う。
   CSV にある曲の未プレイ譜面は NO PLAY、CSV に無い曲（未購入パックなど）は未解禁として扱う。今は SP だけ。
-- **楽曲データ**（レベル・ノーツ数・BPM）・ノーツレーダー・地力表・MV リンクは、[Inf_GoogleSpreadSheet](https://github.com/OichanST/Inf_GoogleSpreadSheet) と同じ Google Apps Script の Web API から**読むだけ**。
-  GAS のプレイリザルト（getPlayResult）はスコアには使わず、MV リンクだけ拾う。
+- **楽曲データ**（レベル・ノーツ数・BPM）・ノーツレーダー・地力表は、[Inf_GoogleSpreadSheet](https://github.com/OichanST/Inf_GoogleSpreadSheet) と同じ Google Apps Script の Web API から**読むだけ**。
+- **動画**は YouTube Data API で `@oichan_ST` のアップロード動画を読み、タイトル（`[12]Dahlia(RANDOM/HARD)` など）から譜面に割り当てる（ST は正規、ST-R は RANDOM の動画）。1譜面に何本でも付き、曲の詳細に全部出る。
 
 スコア CSV への移行の経緯と残りの作業は [docs/score-csv-migration.md](docs/score-csv-migration.md)。
 

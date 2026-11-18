@@ -11,7 +11,12 @@
   ビューアは Drive API（API キー）で読む。どの端末からでも見られるようにするため
 - ビューアの「CSV」ボタンやドラッグ＆ドロップで読み込んだ CSV は、そのブラウザだけで使い、ドライブのものより優先する（手元で試す用）
 - **未解禁は区別しない**。CSV にある曲の未プレイ譜面は NO PLAY。CSV に無い曲（未購入パック）は未解禁
-- **MV リンクは GAS の getPlayResult から拾う**（MV の有無はユーザーごとなので getMusicData には載せない）
+- **MV（プレー動画）は YouTube Data API で `@oichan_ST` チャンネルのアップロード動画を読み、タイトルから譜面に割り当てる**（2026-11-18。GAS の getPlayResult は使わなくなった）
+  - タイトルは `[レベル]曲名(オプション/ランプ)`（例 `[12]Dahlia(RANDOM/HARD)`）。† 付きは LEGGENDARIA、`SPH` などがあればその譜面。`AC` で始まるのはアーケードの動画なので使わない
+  - DJ ST は正規（RANDOM なし）、ST-R は正規以外（RANDOM など）の動画。設定は api.js の `YOUTUBE_DJ`
+  - 1譜面に動画が何本でも付く（新しい順）。一覧は最新の1本、曲の詳細は全部
+  - タイトルのレベルが今の譜面と合わない（レベル改定）ときは ANOTHER に付ける
+  - スプレッドシートの MV 944 件のうち 930 件が YouTube 側でも見つかった（残りは AC 動画、リミックス版の取り違え、楽曲データに無い譜面）
 - **DP は保留**（DP の CSV がまだ無い）。parseScoreCsv はファイル名の `_dp_score` で DP を判別するが、今は SP だけ受け付ける
 - **GAS からスコアを取る機能は消した**（2026-11-18 ユーザー判断）。スコアは CSV だけ。CSV が無ければ全部 NO PLAY として表示する。
   ログイン時・ライバル追加時の GAS の checkUser、取り込み日時の getUpdatedAt も使わない
@@ -37,6 +42,8 @@
 - `snapshots/` … アップロードごとの tracker の TSV（`2026-11-13_2144.tsv` …）と、スコア CSV（`2026-11-17_2143.csv` …、2026-11-18 から）
 
 ## 残り
+
+PC 側のアップロードスクリプトの改修は [upload-script-spec.md](upload-script-spec.md) にまとめた（家の PC でそれを読んで作業する）。
 
 1. **PC 側のスクリプト**（save_history.py の CSV 版）：ダウンロードした CSV を前回（latest.json）と比べて history.json に書き足し、CSV・latest.json・history.json をドライブに上げる。
    アップロードの認証は今の `upload_on_exit.ps1` / `save_history.py` と同じやり方にそろえる（どちらも家の PC にある。このリポジトリには無い）。

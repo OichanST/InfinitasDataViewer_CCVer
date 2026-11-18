@@ -8,7 +8,8 @@
  * - 楽曲データなどは Google SpreadSheet（Apps Script の Web API。Inf_GoogleSpreadSheet と同じもの、読み取りだけ）
  *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
  *     ?type=getRadarData / getAbilityData  ノーツレーダー / 地力表
- *     ?type=getPlayResult&id=DJ名  プレイリザルト。スコアは使わず、MV リンクだけ拾う
+ *   GAS のプレイリザルト（getPlayResult）は使わない（スコアは CSV、MV は YouTube）
+ * - MV（プレー動画）は YouTube Data API（API キー）でチャンネルのアップロード動画の一覧を読み、タイトルから譜面に割り当てる（model.js の videoMap）
  * - 取得したデータは IndexedDB に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く（設定だけ localStorage）
  */
 window.IV = window.IV || {};
@@ -16,9 +17,43 @@ window.IV = window.IV || {};
 IV.api = (() => {
 	const ENDPOINT = "https://script.google.com/macros/s/AKfycbxIaQ6fbvHINLb4pdBMsrXVcWnpeRGsa9jqwUXQNtKQWNh_SbA5kTHUQ1o7_NvpMGF4Hg/exec";
 	const PREFIX = "ivcc:";
-	// 更新履歴（Google ドライブ）。キーは Drive API だけに制限してある。フォルダは「リンクを知っている全員」が閲覧可
+	// API キー（ページに書くので誰でも見られる。使える API を絞って守る）
+	// Google ドライブ（スコア CSV・更新履歴）。キーは Drive API だけに制限してある。フォルダは「リンクを知っている全員」が閲覧可
 	const DRIVE_KEY = "AIzaSyB53XswWAZgxGICNZMQYe7lqaMzr5KUZ3o";
 	const HISTORY_FOLDER = "1wDdpLEK_TUE9E-MRndHfS2NvinGd6272";
+	// YouTube Data API（MV）。youtubeViewer と同じキー
+	const YOUTUBE_KEY = "AIzaSyAcvkG759mbzrz-Xkoh0YdwSybBgwYeybA";
+	// MV を出す DJ と、使う動画。チャンネルは @oichan_ST（S T）。ST は正規（RANDOM なし）、ST-R は正規以外（RANDOM など）の動画
+	const YOUTUBE_UPLOADS = "UUJxtUcrOc1yyG7ZzJKBtTUA"; // チャンネル UCJxtUcrOc1yyG7ZzJKBtTUA のアップロード動画のプレイリスト
+	const YOUTUBE_DJ = { "ST": "regular", "ST-R": "random" };
+
+	/**
+	 * チャンネルのアップロード動画 [{ id, title, at }]（新しい順）。50 本ずつ取る（1回 1 ユニット。1日 10,000 ユニットまで）。
+	 * キャッシュがあれば、知っている動画が出てきたところで止めて新しい分だけ足す（full なら全部取り直す。タイトルの直し・削除はこちらで反映）
+	 */
+	async function getYoutubeVideos(full) {
+		const cached = full ? null : await idb.read("youtube");
+		const known = new Set(cached && cached.data ? cached.data.map((v) => v.id) : []);
+		const got = [];
+		let token = "";
+		for (;;) {
+			const url = "https://www.googleapis.com/youtube/v3/playlistItems?" + new URLSearchParams({
+				part: "snippet", playlistId: YOUTUBE_UPLOADS, maxResults: "50", key: YOUTUBE_KEY, ...(token ? { pageToken: token } : {}),
+			});
+			const res = await fetch(url);
+			if (!res.ok) throw new Error(`動画一覧の取得に失敗しました（HTTP ${res.status}）`);
+			const d = await res.json();
+			let hit = false;
+			for (const it of d.items || []) {
+				const id = it.snippet.resourceId.videoId;
+				if (known.has(id)) { hit = true; break; }
+				got.push({ id, title: it.snippet.title, at: it.snippet.publishedAt });
+			}
+			token = d.nextPageToken;
+			if (hit || !token) break;
+		}
+		return known.size ? [...got, ...cached.data] : got;
+	}
 
 	async function driveFind(parent, name) {
 		return (await driveList(parent, `name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`))[0] || null;
@@ -158,12 +193,14 @@ IV.api = (() => {
 
 	return {
 		loadMusic: (onData, opts) => load("music", { type: "getMusicData" }, onData, opts),
-		/** GAS のプレイリザルト（MV リンクのためだけに読む） */
-		loadResult: (id, onData, opts) => load("result:" + id, { type: "getPlayResult", id }, onData, opts),
 		loadRadar: (onData, opts) => load("radar", { type: "getRadarData" }, onData, opts),
 		loadAbility: (onData, opts) => load("ability", { type: "getAbilityData" }, onData, opts),
 		loadHistory: (id, onData, opts) => load("history:" + id, () => getHistory(id), onData, opts),
 		loadDriveCsv: (id, onData, opts) => load("drivecsv:" + id, () => getDriveCsv(id), onData, opts),
+		/** YouTube のアップロード動画。↻（force）のときは全部取り直す */
+		loadYoutube: (onData, opts = {}) => load("youtube", () => getYoutubeVideos(!!opts.force), onData, opts),
+		/** その DJ に出す動画の種類（"regular" / "random"）。MV を出さない DJ は null */
+		youtubeKind: (id) => YOUTUBE_DJ[id] || null,
 		/**
 		 * 読み込んだスコア CSV（{ name: ファイル名, csv: parseScoreCsv の結果 }）。DJ ごとに IndexedDB に置く。
 		 * ↻ では取り直さない（ファイルを選び直さないと更新できないため）

@@ -102,7 +102,8 @@ IV.model = (() => {
 						open, lamp, lampIdx: LAMPS.indexOf(lamp), played,
 						ex, miss: played && r.MISSCOUNT !== "" && r.MISSCOUNT != null && r.MISSCOUNT !== "-" ? Number(r.MISSCOUNT) : null,
 						grade: g.grade, gradeDetail: g.detail, rate: g.rate,
-						mv: /^https?:\/\//.test(r.MV || "") ? r.MV : "",
+						// YouTube の動画（新しい順）。mv は一覧に出す最新の1本
+						videos: r.VIDEOS || [], mv: (r.VIDEOS && r.VIDEOS[0] && r.VIDEOS[0].url) || "",
 						// スコア CSV から読んだときだけ入る（GAS のリザルトには無い）
 						plays: r.PLAYS ?? null, lastPlay: r.LASTPLAY || "",
 						searchText,
@@ -488,22 +489,73 @@ IV.model = (() => {
 		return (title) => (exact.has(title) ? title : byLight.get(light(title)) || byStrong.get(strong(title)) || null);
 	}
 
-	/** GAS のリザルトから MV リンクだけ取り出す（{ 曲名: { SPA: URL, ... } }）。スコアは使わない */
-	function mvMap(gasResults) {
-		const m = new Map();
-		for (const r of gasResults || []) {
-			const o = {};
-			for (const k in r) if (r[k] && /^https?:\/\//.test(r[k].MV || "")) o[k] = r[k].MV;
-			if (Object.keys(o).length) m.set(r.TITLE, o);
+	// ---------- YouTube の動画（MV リンク） ----------
+	// タイトルの例: "[12]Dahlia(RANDOM/HARD)"、"[10]the trigger of innocence†(RANDOM/EXH) AA"、"[12]Viridian"、"[11]FOO(SPH/RANDOM/FC)"
+	//   [レベル]曲名(オプション/ランプ) の形。† 付きは LEGGENDARIA。"AC" で始まるものはアーケードの動画なので使わない
+	const VIDEO_TOKENS = new Set(["RANDOM", "RAN", "RRAN", "SRAN", "S-RANDOM", "R-RANDOM", "MIRROR", "HARD", "EASY", "EXH", "FC", "CLEAR", "AE", "ASSIST", "SPB", "SPN", "SPH", "SPA", "SPL"]);
+	const VIDEO_RANDOM = new Set(["RANDOM", "RAN", "RRAN", "SRAN", "S-RANDOM", "R-RANDOM", "MIRROR"]);
+	const VIDEO_LAMP = { EASY: "EASY CLEAR", CLEAR: "CLEAR", HARD: "HARD CLEAR", EXH: "EX HARD CLEAR", FC: "FULL COMBO", AE: "ASSIST CLEAR", ASSIST: "ASSIST CLEAR" };
+	/** 動画タイトルを読む。{ level, song, diff: "A" など or null, leggendaria, random: 正規以外か, lamp } 読めなければ null */
+	function parseVideoTitle(title) {
+		const t = String(title || "").trim();
+		if (/^AC/i.test(t)) return null;
+		const m = t.match(/^\[(\d+)\](.*)$/);
+		if (!m) return null;
+		const rest = m[2];
+		let song = rest.trim(), opts = [];
+		// 曲名にもカッコがある（"(This Is Not) The Angels"、"THE SHINING POLARIS(kors k mix)"）ので、
+		// 中身が全部オプション・ランプの言葉になっている最後のカッコだけをオプションとみなす。後ろの " AA" などは捨てる
+		const groups = [...rest.matchAll(/\(([^()]*)\)/g)];
+		for (let i = groups.length - 1; i >= 0; i--) {
+			const toks = groups[i][1].split(/[/\\]/).map((s) => s.trim().toUpperCase()).filter(Boolean);
+			if (toks.length && toks.every((x) => VIDEO_TOKENS.has(x))) { opts = toks; song = rest.slice(0, groups[i].index).trim(); break; }
 		}
-		return m;
+		const leggendaria = /†$/.test(song);
+		song = song.replace(/†$/, "").trim();
+		const d = opts.find((x) => /^SP[BNHAL]$/.test(x));
+		const lampTok = opts.find((x) => VIDEO_LAMP[x]);
+		return {
+			level: Number(m[1]), song, diff: d ? d[2] : null, leggendaria,
+			random: opts.some((x) => VIDEO_RANDOM.has(x)), lamp: lampTok ? VIDEO_LAMP[lampTok] : "",
+		};
 	}
 
 	/**
-	 * CSV の内容でリザルトを作る（build に渡す形。GAS のリザルトと同じ形）。MV リンクは mvs（mvMap の結果、なければ無し）から付ける。
+	 * YouTube の動画を譜面に割り当てる。videos は [{ id, title, at }]、kind は "regular"（正規）/ "random"（正規以外）。
+	 * 戻り値 { map: Map<曲名, { SPA: [{ url, title, lamp, at }, ...（新しい順）] }>, skipped: [割り当てられなかった動画のタイトル] }。
+	 * 1つの譜面に動画が何本あってもよい。
+	 * 譜面はタイトルの SPx、† なら L、なければレベルが同じ譜面（A → H → N → B の順）。
+	 * レベルが合う譜面が無いとき（レベル改定のあと）は A にする
+	 */
+	function videoMap(music, videos, kind) {
+		const match = titleMatcher(music.musicList.map((s) => s.TITLE));
+		const songs = new Map(music.musicList.map((s) => [s.TITLE, s]));
+		const map = new Map();
+		const skipped = [];
+		const sorted = (videos || []).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
+		for (const v of sorted) {
+			const p = parseVideoTitle(v.title);
+			if (!p) continue;
+			if (p.random !== (kind === "random")) continue;
+			const t = match(p.song);
+			const song = t && songs.get(t);
+			if (!song) { skipped.push(v.title); continue; }
+			const has = (d) => song["SP" + d] && song["SP" + d].DIFFICULT;
+			let d = p.diff || (p.leggendaria ? "L" : ["A", "H", "N", "B"].find((x) => has(x) && Number(song["SP" + x].DIFFICULT) === p.level));
+			if (!d) d = has("A") ? "A" : null;
+			if (!d || !has(d)) { skipped.push(v.title); continue; }
+			if (!map.has(t)) map.set(t, {});
+			const o = map.get(t);
+			(o["SP" + d] = o["SP" + d] || []).push({ url: `https://www.youtube.com/watch?v=${v.id}`, title: v.title, lamp: p.lamp, at: v.at });
+		}
+		return { map, skipped };
+	}
+
+	/**
+	 * CSV の内容でリザルトを作る（build に渡す形）。動画は mvs（videoMap の map、なければ無し）から付ける。
 	 * CSV に無い曲（未購入のパックなど）は未解禁、CSV にあって遊んでいない譜面は NO PLAY として扱う。
 	 * CSV の反対の style（今は DP）は、CSV にある曲なら NO PLAY、無い曲なら未解禁
-	 * 戻り値 { results, unmatched: [CSV の曲名] }。同じ music と csv なら前の結果を使い回す
+	 * 戻り値 { results, unmatched: [CSV の曲名] }。同じ music・mvs・csv なら前の結果を使い回す
 	 */
 	const applyCache = new WeakMap();
 	function applyScoreCsv(music, mvs, csv) {
@@ -524,10 +576,11 @@ IV.model = (() => {
 				for (const d of DIFFS) {
 					const key = st + d;
 					const c = s && st === csv.style ? s.charts[d] : null;
+					const videos = mv[key] || [];
 					out[key] = c ? {
-						OPEN: "TRUE", CLEARSTATUS: c.lamp === "NO PLAY" ? "" : c.lamp, EXSCORE: c.ex, MISSCOUNT: c.miss ?? "", MV: mv[key] || "",
+						OPEN: "TRUE", CLEARSTATUS: c.lamp === "NO PLAY" ? "" : c.lamp, EXSCORE: c.ex, MISSCOUNT: c.miss ?? "", VIDEOS: videos,
 						PLAYS: c.plays, LASTPLAY: c.lastPlay, UPDATED: c.updated,
-					} : { OPEN: s ? "TRUE" : "", MV: mv[key] || "" };
+					} : { OPEN: s ? "TRUE" : "", VIDEOS: videos };
 				}
 			}
 			return out;
@@ -537,5 +590,5 @@ IV.model = (() => {
 		return out;
 	}
 
-	return { parseScoreCsv, applyScoreCsv, mvMap, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
+	return { parseScoreCsv, applyScoreCsv, parseVideoTitle, videoMap, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
 })();
