@@ -952,6 +952,15 @@ ${rv}
 		for (const d of document.querySelectorAll("dialog")) d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
 		// ブラウザの戻る・手で # を書き換えたとき
 		window.addEventListener("hashchange", () => { state.f = readHash(); apply(); });
+		// PC ではタブをヘッダーに入れる（スクロールしても見えるように）。スマホは今までどおり一覧の上
+		const pc = window.matchMedia("(min-width: 641px)");
+		const placeTabs = () => {
+			const nav = $("#viewTabs");
+			if (pc.matches) $(".top").insertBefore(nav, $("#rivalBtn"));
+			else $("#app").prepend(nav);
+		};
+		placeTabs();
+		pc.addEventListener("change", placeTabs);
 	}
 
 	// 起動

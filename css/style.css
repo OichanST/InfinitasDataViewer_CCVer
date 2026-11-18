@@ -45,6 +45,11 @@ button { cursor: pointer; }
 .top .sync { color: var(--muted); font-size: 12px; margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .top .icon { background: none; border: 1px solid var(--line); border-radius: 6px; padding: 2px 10px; color: var(--muted); }
 .top .icon:hover { color: var(--text); border-color: var(--muted); }
+/* PC: タブはヘッダーの中（JS で移す）。ログイン画面では出さない */
+.top .tabs { padding: 0; border-bottom: 0; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.top .tabs button { border: 1px solid transparent; border-radius: 6px; padding: 3px 12px; margin: 0; }
+.top .tabs button[aria-selected="true"] { background: var(--panel2); border-color: var(--line); }
+body:has(#app[hidden]) .top .tabs { display: none; }
 
 /* ログイン */
 .login { display: grid; place-items: center; min-height: 70vh; padding: 20px; }
