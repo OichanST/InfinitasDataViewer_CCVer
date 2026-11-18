@@ -122,7 +122,8 @@
 	const csvTime = (s) => s ? s.replace(/^\d{4}-0?(\d+)-0?(\d+)/, "$1/$2") : "";
 	function syncText() {
 		if (state.guest) setSync(`${timeText(Date.now())} 時点`);
-		else if (state.csv) setSync(`CSV ${csvTime(state.csv.csv.lastPlay)} プレーまで`);
+		// CSV の中でいちばん新しい「最終プレー日時」（いつ遊んだ分までのスコアか）
+		else if (state.csv) setSync(csvTime(state.csv.csv.lastPlay));
 		else setSync("スコア CSV がありません");
 	}
 
