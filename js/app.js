@@ -219,6 +219,9 @@
 		const f = state.f;
 		// ライバルタブは、選んでいなければ（または外したライバルなら）最初のライバルにする
 		if (!state.rivals.some((r) => r.id === f.rival)) { f.rival = state.rivals.length ? state.rivals[0].id : ""; }
+		// ライバルを登録していなければライバルタブは出さない（開いていたら一覧に戻す）
+		$('#viewTabs [data-view="rival"]').hidden = !state.rivals.length;
+		if (!state.rivals.length && f.view === "rival") f.view = "list";
 		if (f.view !== "rival" && f.sort === "rival") f.sort = "level"; // 「ライバルとの差順」はライバルタブだけ
 		const base = viewCharts();
 		state.view = M.sort(base, f.sort, f.dir, f.rival);
