@@ -137,7 +137,7 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .hTable th:first-child, .hTable th:nth-child(2) { text-align: left; }
 .hTable .hLamp { text-align: left; }
 .hUp { color: #7ee36b; } .hDown { color: #ff6b6b; }
-.hTable th:nth-child(3), .hTable td.hGrade, .dhist .dtable th:nth-child(4), .dhist .dtable td.hGrade { text-align: center; }
+.hTable th:nth-child(3), .hTable td.hGrade, .dhist .dtable th:nth-child(3), .dhist .dtable td.hGrade { text-align: center; }
 .hNone { margin: 4px 0 0; font-size: 12px; }
 /* スマホ: 1譜面を2段に（上に曲名、下にランプ・DJ LEVEL・EX SCORE・MISS COUNT）。横スクロールなしで全部見える */
 @media (max-width: 640px) {
@@ -173,7 +173,7 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .hcTip[hidden] { display: none; }
 .hcTip i { margin-left: 0; }
 .hcTip b { color: var(--text); font-weight: normal; }
-.dhist .dtable th:nth-child(2), .dhist .dtable td:nth-child(2), .dhist .dtable th:nth-child(3), .dhist .hLamp { text-align: left; }
+.dhist .dtable th:nth-child(2), .dhist .hLamp { text-align: left; }
 
 /* 地力表 */
 .ability { padding: 10px 0; }
@@ -340,9 +340,7 @@ dialog { background: var(--panel); color: var(--text); border: 1px solid var(--l
 /* 詳細は表に動画の列があるので少し広め */
 #detail { width: min(860px, calc(100% - 24px)); }
 .dvideo { margin-top: 14px; }
-.dvRow { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; border-top: 1px solid var(--line); }
-.dvDiff { flex: none; width: 96px; color: var(--dc); font-size: 12px; }
-.dvLinks { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.dvLinks { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 4px; border-top: 1px solid var(--line); }
 .dvLinks .mv { white-space: nowrap; }
 /* 数字用フォント（Kdam Thmor Pro）は ( ) が [ ] のような形になるので、括弧だけ別のフォントにする */
 .paren { font-family: "Segoe UI", system-ui, sans-serif; }

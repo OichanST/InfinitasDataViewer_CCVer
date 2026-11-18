@@ -327,17 +327,17 @@
 		const sc = $("#histBody .hcScroll");
 		if (sc) sc.scrollLeft = sc.scrollWidth; // 新しい日（右端）を見せる
 	}
-	/** 詳細モーダル用: その曲（同じ SP/DP）の変化を新しい順に */
+	/** 詳細モーダル用: その譜面の変化を新しい順に */
 	function songHistoryHtml(c) {
 		const rows = [];
 		for (const s of state.histSessions || []) {
 			for (const x of s.changes) {
-				if (x.title === c.title && x.style === c.style) rows.push(`<tr style="--dc:var(--d-${x.diff})"><td class="num">${timeText(s.at)}</td><td class="lvcell">${M.DIFF_NAMES[x.diff] || x.diff}</td>${changeCells(x)}</tr>`);
+				if (x.title === c.title && x.key === c.key) rows.push(`<tr><td class="num">${timeText(s.at)}</td>${changeCells(x)}</tr>`);
 			}
 		}
 		if (!rows.length) return "";
 		return `<div class="dhist"><div class="radarCaption muted">HISTORY</div><div style="overflow-x:auto"><table class="dtable">
-			<thead><tr><th>日時</th><th>譜面</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows.join("")}</tbody></table></div></div>`;
+			<thead><tr><th>日時</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows.join("")}</tbody></table></div></div>`;
 	}
 
 	// ---------- プレイヤーのノーツレーダー ----------
@@ -707,26 +707,24 @@
 			</svg>
 		</div>`;
 	}
-	/** 詳細の表の下の VIDEO 欄: 譜面ごとに、動画を新しい順に横並び（「▶ ランプ 日付」） */
-	function songVideosHtml(charts) {
-		const rows = charts.filter((x) => x.videos.length).map((x) => {
-			const links = x.videos.map((v) => {
-				const d = new Date(v.at);
-				const date = isNaN(d) ? "" : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-				const lamp = `<span style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span>`;
-				return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}">▶ ${lamp} <span class="muted">${date}</span></a>`;
-			}).join("");
-			return `<div class="dvRow" style="--dc:var(--d-${x.diff})"><span class="dvDiff">${M.DIFF_NAMES[x.diff]}</span><div class="dvLinks">${links}</div></div>`;
-		});
-		return rows.length ? `<div class="dvideo"><div class="radarCaption muted">VIDEO</div>${rows.join("")}</div>` : "";
+	/** 詳細の表の下の VIDEO 欄: その譜面の動画を新しい順に横並び（「▶ ランプ 日付」） */
+	function songVideosHtml(c) {
+		if (!c.videos.length) return "";
+		const links = c.videos.map((v) => {
+			const d = new Date(v.at);
+			const date = isNaN(d) ? "" : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+			const lamp = `<span style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span>`;
+			return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}">▶ ${lamp} <span class="muted">${date}</span></a>`;
+		}).join("");
+		return `<div class="dvideo"><div class="radarCaption muted">VIDEO</div><div class="dvLinks">${links}</div></div>`;
 	}
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
 		if (!c) return;
-		const same = state.charts.filter((x) => x.title === c.title && x.style === c.style);
 		const s = c.song;
 		const rivalHead = state.rivals.map((r) => `<th>${esc(r.id)}</th>`).join("");
-		const rows = same.map((x) => {
+		// 押した譜面だけ出す（同じ曲のほかの難易度は出さない）
+		const rows = [c].map((x) => {
 			const rv = x.rivals.map((r) => {
 				if (!r.played) return `<td class="num">-</td>`;
 				const cls = rivalCls(r);
@@ -752,7 +750,7 @@ ${rv}
 				<thead><tr><th>${c.style}</th><th>NOTES</th><th>BPM</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
-			${songVideosHtml(same)}
+			${songVideosHtml(c)}
 			${songHistoryHtml(c)}`;
 		$("#detail").showModal();
 	}
