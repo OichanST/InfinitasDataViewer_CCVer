@@ -100,7 +100,7 @@
 	// ---------- データ読み込み ----------
 	/**
 	 * 自分とライバルのリザルトは e-amusement のスコア CSV から作る（GAS のスコアは使わない）。
-	 * 自分の CSV はこのブラウザで読み込んだもの、なければドライブの INFINITAS履歴/<DJ名>/ に置いたもの。
+	 * 自分の CSV はこのブラウザで読み込んだもの、なければドライブの INFINITAS履歴/<DJ名>/latest.csv。
 	 * GAS の getPlayResult は MV リンクのためだけに読む
 	 */
 	const csvResults = (csv) => {
@@ -949,7 +949,7 @@
 			if (id === state.id) { $("#rivalErr").textContent = "自分は追加できません。"; return; }
 			if (state.rivals.some((r) => r.id === id)) { $("#rivalErr").textContent = "追加済みです。"; return; }
 			try {
-				// ライバルもドライブの INFINITAS履歴/<DJ名>/ に置いたスコア CSV と比べる
+				// ライバルもドライブの INFINITAS履歴/<DJ名>/latest.csv と比べる
 				let found = false;
 				const rv = { id, csv: null };
 				await IV.api.loadDriveCsv(id, (data) => { if (data) { found = true; rv.csv = data.csv; } });

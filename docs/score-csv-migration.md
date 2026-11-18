@@ -6,7 +6,8 @@
 ## 決めたこと
 
 - **楽曲データ（レベル・ノーツ数・BPM）は GAS の getMusicData を使い続ける**。CSV にはノーツ数などが無いため
-- **CSV は Google ドライブの `INFINITAS履歴/<DJ名>/` に置く**（履歴 history.json と同じフォルダ。ファイル名はダウンロードしたままでよい）。
+- **今のスコアは Google ドライブの `INFINITAS履歴/<DJ名>/latest.csv`**（latest.json と同じ考え方）。ビューアはこれだけを読む。
+  履歴用の控えは `snapshots/` に日時の名前（`2026-11-17_2143.csv`。tracker の TSV のスナップショットと同じ並び）で置く。ビューアは読まない
   ビューアは Drive API（API キー）で読む。どの端末からでも見られるようにするため
 - ビューアの「CSV」ボタンやドラッグ＆ドロップで読み込んだ CSV は、そのブラウザだけで使い、ドライブのものより優先する（手元で試す用）
 - **未解禁は区別しない**。CSV にある曲の未プレイ譜面は NO PLAY。CSV に無い曲（未購入パック）は未解禁
@@ -14,7 +15,7 @@
 - **DP は保留**（DP の CSV がまだ無い）。parseScoreCsv はファイル名の `_dp_score` で DP を判別するが、今は SP だけ受け付ける
 - **GAS からスコアを取る機能は消した**（2026-11-18 ユーザー判断）。スコアは CSV だけ。CSV が無ければ全部 NO PLAY として表示する。
   ログイン時・ライバル追加時の GAS の checkUser、取り込み日時の getUpdatedAt も使わない
-- **ライバルもドライブの CSV と比べる**（`INFINITAS履歴/<ライバル名>/` に CSV が無いと追加できない）
+- **ライバルもドライブの CSV と比べる**（`INFINITAS履歴/<ライバル名>/latest.csv` が無いと追加できない）
 - 履歴も tracker.tsv ではなく CSV から作るようにする（下の「残り」）
 
 ## 検証の結果（2026-11-18、ST-R の CSV と GAS のリザルトを SP 全 5746 譜面で比較）
@@ -32,8 +33,8 @@
 
 - `history.json` … `{ dj, sessions: [{ at, baseline?, count?, changes: [[曲名, "SPA", [ランプ, EX, MISS] | null, [ランプ, EX, MISS]], ...] }] }`
 - `latest.json` … 前回の状態（save_history.py が比較に使う）
-- `snapshots/`
-- `○○_sp_score.csv` … ここに置く（2026-11-18 から）
+- `latest.csv` … 今のスコア CSV（ビューアが読む。2026-11-18 から）
+- `snapshots/` … アップロードごとの tracker の TSV（`2026-11-13_2144.tsv` …）と、スコア CSV（`2026-11-17_2143.csv` …、2026-11-18 から）
 
 ## 残り
 

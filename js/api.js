@@ -3,7 +3,7 @@
  * データの取得とキャッシュ。
  *
  * - スコア・更新履歴は Google ドライブの公開フォルダから Drive API（API キー）で読む
- *     INFINITAS履歴/<DJ名>/○○_sp_score.csv（e-amusement のスコア CSV。自分とライバルのスコアはこれだけを使う）
+ *     INFINITAS履歴/<DJ名>/latest.csv（今のスコア。e-amusement のスコア CSV。自分とライバルのスコアはこれだけを使う）
  *     INFINITAS履歴/<DJ名>/history.json（PC の save_history.py がアップロードのたびに書き足す）
  * - 楽曲データなどは Google SpreadSheet（Apps Script の Web API。Inf_GoogleSpreadSheet と同じもの、読み取りだけ）
  *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
@@ -34,13 +34,14 @@ IV.api = (() => {
 		return files;
 	}
 	/**
-	 * ドライブの INFINITAS履歴/<DJ名>/ に置いたスコア CSV（e-amusement の「○○_sp_score.csv」。名前はそのままでよい。複数あれば新しいもの）。
+	 * ドライブの INFINITAS履歴/<DJ名>/latest.csv（今のスコア。e-amusement の SP のスコア CSV の中身そのまま）。
+	 * snapshots/ の CSV は履歴用の控えなので読まない。
 	 * { name, csv: parseScoreCsv の結果, _mt: 更新時刻 }。置いていなければ null。
 	 * 履歴と同じく、更新時刻がキャッシュと同じならダウンロードしない
 	 */
 	async function getDriveCsv(id) {
 		const dir = await driveFind(HISTORY_FOLDER, id);
-		const file = dir && (await driveList(dir.id)).find((f) => /sp_score\.csv$/i.test(f.name));
+		const file = dir && (await driveFind(dir.id, "latest.csv"));
 		if (!file) return null;
 		const cached = await idb.read("drivecsv:" + id);
 		if (cached && cached.data && cached.data._mt === file.modifiedTime) return cached.data;

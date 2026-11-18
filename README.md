@@ -3,7 +3,8 @@
 beatmania IIDX INFINITAS のプレイリザルト（クリアランプ・EXスコア・DJ LEVEL）を、e-amusement のスコア CSV から読み込んでブラウザで見るためのビューア。
 
 - **スコア**：e-amusement の「スコアデータ CSV ダウンロード」で取れる `○○_sp_score.csv`。
-  Google ドライブの公開フォルダ `INFINITAS履歴/<DJ名>/` に置いたものを Drive API（API キー）で読む（ファイル名はそのままでよい）。
+  Google ドライブの公開フォルダ `INFINITAS履歴/<DJ名>/latest.csv`（今のスコア）を Drive API（API キー）で読む。
+  `snapshots/` に日時の名前（`2026-11-17_2143.csv`）で置く CSV は履歴用の控えで、ビューアは読まない。
   右上の「CSV」ボタンやドラッグ＆ドロップで読み込むと、そのブラウザだけでドライブのものより優先して使う。
   CSV にある曲の未プレイ譜面は NO PLAY、CSV に無い曲（未購入パックなど）は未解禁として扱う。今は SP だけ。
 - **楽曲データ**（レベル・ノーツ数・BPM）・ノーツレーダー・地力表・MV リンクは、[Inf_GoogleSpreadSheet](https://github.com/OichanST/Inf_GoogleSpreadSheet) と同じ Google Apps Script の Web API から**読むだけ**。
