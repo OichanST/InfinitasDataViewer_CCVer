@@ -372,6 +372,14 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
   /* DJ LEVEL の (A-79) と EX SCORE の (64.22%) は下の段に、括弧なしで（右の列を細くする） */
   .dtable .dsub { display: block; font-size: 11px; }
   .dtable .dsub .paren { display: none; }
+  /* 詳細の HISTORY: ランプは「→ 後」を2段目に、EX SCORE・MISS COUNT の差分は下の段に括弧なしで */
+  .dhist .hTo { display: block; }
+  .dhist .hDiff { display: block; font-size: 11px; }
+  .dhist .hDiff .paren { display: none; }
+  .dhist .dtable td { vertical-align: top; }
+  /* 右の列に収まるよう、見出しは折り返して（MISS / COUNT）列を詰める */
+  .dhist .dtable th { white-space: normal; vertical-align: bottom; line-height: 1.2; }
+  .dhist .dtable th, .dhist .dtable td { padding: 6px 4px; }
 }
 /* PC: 左にノーツレーダー、右にプレイリザルトと動画（詳細画面を少し広げる）。スマホは縦に並べたまま */
 #detail { width: min(820px, calc(100% - 24px)); }
