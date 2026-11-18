@@ -365,6 +365,9 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 /* スマホは今までどおり表の中に譜面・NOTES・BPM を出す（曲名の右には出さない） */
 .dtable .mOnly { display: none; }
 @media (min-width: 641px) {
+  /* 画面の高さが低い（拡大表示・ノート PC）ときは、レーダーを縮めて詳細画面に縦スクロールが出ないようにする */
+  #detail { max-height: 94vh; }
+  .dleft .radarWrap svg { height: min(312px, max(180px, calc(94vh - 190px))); width: auto; }
   .dtable .dlamp { text-align: left; }
   /* DJ LEVEL の (A-79) と EX SCORE の (64.22%) は下の段に、括弧なしで（右の列を細くする） */
   .dtable .dsub { display: block; font-size: 11px; }
