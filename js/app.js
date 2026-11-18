@@ -89,6 +89,11 @@
 		$("#loading").hidden = !on;
 		if (text) $("#loadingText").textContent = text;
 	}
+	/** 履歴の日付: "2026/11/17"（時刻は出さない） */
+	function dateText(at) {
+		const d = new Date(at);
+		return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+	}
 	function timeText(at) {
 		const d = new Date(at);
 		return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -313,7 +318,7 @@
 			return;
 		}
 		$("#histBody").innerHTML = histChartHtml(sessions, f.style) + sessions.map((s) => {
-			const when = `<span class="num">${timeText(s.at)}</span>`;
+			const when = `<span class="num">${dateText(s.at)}</span>`;
 			if (s.baseline) {
 				return `<section class="hSession" data-day="${dayKey(s.at)}"><h3>${when}<span class="muted">記録開始（${s.count} 譜面）。ここから先の変化を記録します</span></h3></section>`;
 			}
@@ -334,12 +339,12 @@
 		const rows = [];
 		for (const s of state.histSessions || []) {
 			for (const x of s.changes) {
-				if (x.title === c.title && x.key === c.key) rows.push(`<tr><td class="num">${timeText(s.at)}</td>${changeCells(x)}</tr>`);
+				if (x.title === c.title && x.key === c.key) rows.push(`<tr><td class="num">${dateText(s.at)}</td>${changeCells(x)}</tr>`);
 			}
 		}
 		if (!rows.length) return "";
 		return `<div class="dhist"><div class="radarCaption muted">HISTORY</div><div style="overflow-x:auto"><table class="dtable">
-			<thead><tr><th>日時</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows.join("")}</tbody></table></div></div>`;
+			<thead><tr><th>日付</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows.join("")}</tbody></table></div></div>`;
 	}
 
 	// ---------- プレイヤーのノーツレーダー ----------
