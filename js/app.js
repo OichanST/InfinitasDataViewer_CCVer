@@ -736,8 +736,6 @@
 				return `<td class="num">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
 			}).join("");
 			return `<tr class="${x.id === c.id ? "cur" : ""}" style="--dc:var(--d-${x.diff})">
-				<td class="lvcell">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
-				<td class="num">${x.notes}</td><td class="num">${esc(x.bpm)}</td>
 				<td style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>
 				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.played ? `${x.ex}<span class="muted"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
@@ -746,12 +744,20 @@ ${rv}
 			</tr>`;
 		}).join("");
 		$("#detailBody").innerHTML = `
-			${s.GENRE ? `<div class="dgenre">${esc(s.GENRE)}</div>` : ""}
-			<h2>${esc(s.TITLE)}</h2>
-			<div class="dinfo"><span>${esc(s.ARTIST)}</span></div>
+			<div class="dhead">
+				<div class="dsong">
+					${s.GENRE ? `<div class="dgenre">${esc(s.GENRE)}</div>` : ""}
+					<h2>${esc(s.TITLE)}</h2>
+					<div class="dinfo"><span>${esc(s.ARTIST)}</span></div>
+				</div>
+				<div class="dchart" style="--dc:var(--d-${c.diff})">
+					<div class="dchartName">${c.style} ${M.DIFF_NAMES[c.diff]} <b>${c.level}</b></div>
+					<div class="dchartSub"><span><b>${c.notes}</b> NOTES</span><span>BPM <b>${esc(c.bpm)}</b></span></div>
+				</div>
+			</div>
 			${radarHtml(c)}
 			<div style="overflow-x:auto"><table class="dtable">
-				<thead><tr><th>${c.style}</th><th>NOTES</th><th>BPM</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
+				<thead><tr><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
 			${songVideosHtml(c)}

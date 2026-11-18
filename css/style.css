@@ -354,6 +354,14 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 dialog h2 { margin: 0 0 4px; font-family: var(--title); font-size: 18px; font-weight: 500; }
 dialog .close { position: absolute; top: 8px; right: 10px; background: none; border: 0; color: var(--muted); font-size: 22px; }
 .dgenre { color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+/* 詳細の上: 左に曲（ジャンル・曲名・アーティスト）、右に譜面（難易度・レベル・NOTES・BPM）。右上の × に重ならないよう右を空ける */
+.dhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px 20px; flex-wrap: wrap; padding-right: 28px; }
+.dsong { min-width: 0; }
+.dchart { text-align: right; margin-bottom: 10px; }
+.dchartName { font-family: var(--num); color: var(--dc); font-size: 15px; letter-spacing: .04em; }
+.dchartName b { font-size: 22px; font-weight: normal; margin-left: 2px; }
+.dchartSub { color: var(--muted); font-size: 12px; display: flex; gap: 12px; justify-content: flex-end; }
+.dchartSub b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 14px; }
 .dinfo { color: var(--muted); font-size: 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .radarWrap { display: flex; flex-direction: column; align-items: center; margin: 4px 0 12px; }
 .radarCaption { font-size: 11px; letter-spacing: .08em; margin-bottom: 2px; }
