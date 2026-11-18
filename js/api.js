@@ -163,9 +163,6 @@ IV.api = (() => {
 				try { await run("readwrite", (s) => s.put({ at: Date.now(), data }, key)); }
 				catch (e) { console.warn("キャッシュに保存できませんでした:", key, e); }
 			},
-			async remove(key) {
-				try { await run("readwrite", (s) => s.delete(key)); } catch (e) { /* 使えない環境では何もしない */ }
-			},
 			async clear() {
 				try { await run("readwrite", (s) => s.clear()); } catch (e) { /* 使えない環境では何もしない */ }
 			},
@@ -201,13 +198,6 @@ IV.api = (() => {
 		loadYoutube: (onData, opts = {}) => load("youtube", () => getYoutubeVideos(!!opts.force), onData, opts),
 		/** その DJ に出す動画の種類（"regular" / "random"）。MV を出さない DJ は null */
 		youtubeKind: (id) => YOUTUBE_DJ[id] || null,
-		/**
-		 * 読み込んだスコア CSV（{ name: ファイル名, csv: parseScoreCsv の結果 }）。DJ ごとに IndexedDB に置く。
-		 * ↻ では取り直さない（ファイルを選び直さないと更新できないため）
-		 */
-		readCsv: async (id) => { const v = await idb.read("csv:" + id); return v ? { ...v.data, at: v.at } : null; },
-		saveCsv: (id, data) => idb.write("csv:" + id, data),
-		removeCsv: (id) => idb.remove("csv:" + id),
 		/** データのキャッシュ（IndexedDB）を全部消す。設定は残す */
 		clearCache: () => idb.clear(),
 		prefs: {
