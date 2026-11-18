@@ -707,14 +707,18 @@
 			</svg>
 		</div>`;
 	}
-	/** 詳細の表の下の VIDEO 欄: その譜面の動画を新しい順に縦に並べる（1行1本「▶ ランプ 日付」） */
+	/**
+	 * 詳細の表の下の VIDEO 欄: その譜面の動画を新しい順に縦に並べる（1行1本「▶ ランプ 日時」）。
+	 * ランプは PC では正式名（HARD CLEAR）、スマホでは略記（HARD）。日時は YouTube の公開日時（publishedAt）
+	 */
 	function songVideosHtml(c) {
 		if (!c.videos.length) return "";
+		const pad = (n) => String(n).padStart(2, "0");
 		const links = c.videos.map((v) => {
 			const d = new Date(v.at);
-			const date = isNaN(d) ? "" : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-			const lamp = `<span style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span>`;
-			return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}">▶ ${lamp} <span class="muted">${date}</span></a>`;
+			const date = isNaN(d) ? "" : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+			const lamp = `<span class="dvLamp" style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))"><span class="lampFull">${esc(v.lamp)}</span><span class="lampShort">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span></span>`;
+			return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}">▶ ${lamp}<span class="muted num">${date}</span></a>`;
 		}).join("");
 		return `<div class="dvideo"><div class="radarCaption muted">VIDEO</div><div class="dvLinks">${links}</div></div>`;
 	}

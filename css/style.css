@@ -342,6 +342,14 @@ dialog { background: var(--panel); color: var(--text); border: 1px solid var(--l
 .dvideo { margin-top: 14px; }
 .dvLinks { border-top: 1px solid var(--line); }
 .dvLinks .mv { display: block; padding: 5px 2px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+/* ランプの幅をそろえて、右の日時の頭をそろえる（PC は正式名、スマホは略記） */
+.dvLamp { display: inline-block; width: 9.5em; }
+.dvLamp .lampShort { display: none; }
+@media (max-width: 640px) {
+  .dvLamp { width: 5em; }
+  .dvLamp .lampFull { display: none; }
+  .dvLamp .lampShort { display: inline; }
+}
 /* 数字用フォント（Kdam Thmor Pro）は ( ) が [ ] のような形になるので、括弧だけ別のフォントにする */
 .paren { font-family: "Segoe UI", system-ui, sans-serif; }
 dialog::backdrop { background: rgba(0,0,0,.6); }
