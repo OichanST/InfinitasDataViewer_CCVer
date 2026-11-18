@@ -739,8 +739,8 @@
 				<td class="lvcell mOnly">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
 				<td class="num mOnly">${x.notes}</td><td class="num mOnly">${esc(x.bpm)}</td>
 				<td class="dlamp" style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>
-				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
-				<td class="num">${x.played ? `${x.ex}<span class="muted"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
+				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted dsub"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
+				<td class="num">${x.played ? `${x.ex}<span class="muted dsub"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.miss ?? "-"}</td>${state.csv ? `<td class="num"${x.lastPlay ? ` title="最終プレー ${esc(x.lastPlay)}"` : ""}>${x.plays || "-"}${x.lastPlay ? `<div class="muted dlast">${esc(csvTime(x.lastPlay))}</div>` : ""}</td>` : ""}
 ${rv}
 			</tr>`;
@@ -765,9 +765,9 @@ ${rv}
 				<tbody>${rows}</tbody>
 			</table></div>
 			${songVideosHtml(c)}
+			${songHistoryHtml(c)}
 			</div>
-			</div>
-			${songHistoryHtml(c)}`;
+			</div>`;
 		$("#detail").showModal();
 		// 開いたときに最初のリンク（動画）に枠が付かないよう、自動のフォーカスを外す
 		if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();

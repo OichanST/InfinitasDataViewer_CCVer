@@ -364,14 +364,19 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 .dchartSub b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 14px; }
 /* スマホは今までどおり表の中に譜面・NOTES・BPM を出す（曲名の右には出さない） */
 .dtable .mOnly { display: none; }
-@media (min-width: 641px) { .dtable .dlamp { text-align: left; } }
+@media (min-width: 641px) {
+  .dtable .dlamp { text-align: left; }
+  /* DJ LEVEL の (A-79) と EX SCORE の (64.22%) は下の段に、括弧なしで（右の列を細くする） */
+  .dtable .dsub { display: block; font-size: 11px; }
+  .dtable .dsub .paren { display: none; }
+}
 /* PC: 左にノーツレーダー、右にプレイリザルトと動画（詳細画面を少し広げる）。スマホは縦に並べたまま */
-#detail { width: min(960px, calc(100% - 24px)); }
+#detail { width: min(820px, calc(100% - 24px)); }
 .dbody { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: start; }
-.dright .dvideo { margin-top: 18px; }
+.dright .dvideo, .dright .dhist { margin-top: 18px; }
 @media (max-width: 640px) {
   .dbody { display: block; }
-  .dright .dvideo { margin-top: 14px; }
+  .dright .dvideo, .dright .dhist { margin-top: 14px; }
 }
 @media (max-width: 640px) {
   .dchart { display: none; }
