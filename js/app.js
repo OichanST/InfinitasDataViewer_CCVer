@@ -581,7 +581,7 @@
 			<div class="lv">${c.level}<small>${c.key}</small></div>
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
-				<div class="sub"><span class="num">BPM ${esc(c.bpm)}</span><span class="num">${c.notes} NOTES</span>${c.mv ? `<a class="mv" href="${esc(c.mv)}" target="_blank" rel="noopener">▶ 動画</a>` : ""}</div>
+				<div class="sub"><span class="num">BPM ${esc(c.bpm)}</span><span class="num">${c.notes} NOTES</span></div>
 				${radarMiniHtml(c, abilityHtml(c))}
 			</div>
 			<div class="score">${score}</div>
@@ -707,14 +707,18 @@
 			</svg>
 		</div>`;
 	}
-	/** 詳細の動画の列: 新しい順に「▶ ランプ 日付」。ランプが分からない動画は「▶ 動画」 */
-	function videosHtml(videos) {
-		return (videos || []).map((v) => {
-			const d = new Date(v.at);
-			const date = isNaN(d) ? "" : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-			const lamp = v.lamp ? `<span style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span>` : "動画";
-			return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}">▶ ${lamp} <span class="muted">${date}</span></a>`;
-		}).join("");
+	/** 詳細の表の下の VIDEO 欄: 譜面ごとに、動画を新しい順に横並び（「▶ ランプ 日付」） */
+	function songVideosHtml(charts) {
+		const rows = charts.filter((x) => x.videos.length).map((x) => {
+			const links = x.videos.map((v) => {
+				const d = new Date(v.at);
+				const date = isNaN(d) ? "" : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+				const lamp = `<span style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span>`;
+				return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}">▶ ${lamp} <span class="muted">${date}</span></a>`;
+			}).join("");
+			return `<div class="dvRow" style="--dc:var(--d-${x.diff})"><span class="dvDiff">${M.DIFF_NAMES[x.diff]}</span><div class="dvLinks">${links}</div></div>`;
+		});
+		return rows.length ? `<div class="dvideo"><div class="radarCaption muted">VIDEO</div>${rows.join("")}</div>` : "";
 	}
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
@@ -736,7 +740,7 @@
 				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.played ? `${x.ex}<span class="muted"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.miss ?? "-"}</td>${state.csv ? `<td class="num"${x.lastPlay ? ` title="最終プレー ${esc(x.lastPlay)}"` : ""}>${x.plays || "-"}${x.lastPlay ? `<div class="muted dlast">${esc(csvTime(x.lastPlay))}</div>` : ""}</td>` : ""}
-				<td class="mvcell">${videosHtml(x.videos)}</td>${rv}
+${rv}
 			</tr>`;
 		}).join("");
 		$("#detailBody").innerHTML = `
@@ -745,9 +749,10 @@
 			<div class="dinfo"><span>${esc(s.ARTIST)}</span></div>
 			${radarHtml(c)}
 			<div style="overflow-x:auto"><table class="dtable">
-				<thead><tr><th>${c.style}</th><th>NOTES</th><th>BPM</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}<th>動画</th>${rivalHead}</tr></thead>
+				<thead><tr><th>${c.style}</th><th>NOTES</th><th>BPM</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
+			${songVideosHtml(same)}
 			${songHistoryHtml(c)}`;
 		$("#detail").showModal();
 	}

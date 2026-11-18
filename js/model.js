@@ -102,8 +102,8 @@ IV.model = (() => {
 						open, lamp, lampIdx: LAMPS.indexOf(lamp), played,
 						ex, miss: played && r.MISSCOUNT !== "" && r.MISSCOUNT != null && r.MISSCOUNT !== "-" ? Number(r.MISSCOUNT) : null,
 						grade: g.grade, gradeDetail: g.detail, rate: g.rate,
-						// YouTube の動画（新しい順）。mv は一覧に出す最新の1本
-						videos: r.VIDEOS || [], mv: (r.VIDEOS && r.VIDEOS[0] && r.VIDEOS[0].url) || "",
+						// YouTube の動画（新しい順）。曲の詳細に出す
+						videos: r.VIDEOS || [],
 						// スコア CSV から読んだときだけ入る（GAS のリザルトには無い）
 						plays: r.PLAYS ?? null, lastPlay: r.LASTPLAY || "",
 						searchText,
@@ -495,7 +495,7 @@ IV.model = (() => {
 	const VIDEO_TOKENS = new Set(["RANDOM", "RAN", "RRAN", "SRAN", "S-RANDOM", "R-RANDOM", "MIRROR", "HARD", "EASY", "EXH", "FC", "CLEAR", "AE", "ASSIST", "SPB", "SPN", "SPH", "SPA", "SPL"]);
 	const VIDEO_RANDOM = new Set(["RANDOM", "RAN", "RRAN", "SRAN", "S-RANDOM", "R-RANDOM", "MIRROR"]);
 	const VIDEO_LAMP = { EASY: "EASY CLEAR", CLEAR: "CLEAR", HARD: "HARD CLEAR", EXH: "EX HARD CLEAR", FC: "FULL COMBO", AE: "ASSIST CLEAR", ASSIST: "ASSIST CLEAR" };
-	/** 動画タイトルを読む。{ level, song, diff: "A" など or null, leggendaria, random: 正規以外か, lamp } 読めなければ null */
+	/** 動画タイトルを読む。{ level, song, diff: "A" など or null, leggendaria, random: 正規以外か, lamp } 読めなければ null。ランプが書いていなければ CLEAR */
 	function parseVideoTitle(title) {
 		const t = String(title || "").trim();
 		if (/^AC/i.test(t)) return null;
@@ -516,7 +516,7 @@ IV.model = (() => {
 		const lampTok = opts.find((x) => VIDEO_LAMP[x]);
 		return {
 			level: Number(m[1]), song, diff: d ? d[2] : null, leggendaria,
-			random: opts.some((x) => VIDEO_RANDOM.has(x)), lamp: lampTok ? VIDEO_LAMP[lampTok] : "",
+			random: opts.some((x) => VIDEO_RANDOM.has(x)), lamp: lampTok ? VIDEO_LAMP[lampTok] : "CLEAR",
 		};
 	}
 
