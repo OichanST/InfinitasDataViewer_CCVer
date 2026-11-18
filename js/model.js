@@ -321,8 +321,10 @@ IV.model = (() => {
 			byLevel.get(c.level).push(c.rate);
 		}
 		const median = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
-		const allRates = [...byLevel.values()].flat();
-		const typical = (lv) => (byLevel.get(lv)?.length >= 3 ? median(byLevel.get(lv)) : median(allRates));
+		// 中央値はレベルごとに1回だけ計算しておく（譜面ごとに並べ替え直すと、全譜面が対象のとき10秒以上かかっていた）
+		const allMedian = median([...byLevel.values()].flat());
+		const levelMedian = new Map([...byLevel].map(([lv, rates]) => [lv, rates.length >= 3 ? median(rates) : allMedian]));
+		const typical = (lv) => (levelMedian.has(lv) ? levelMedian.get(lv) : allMedian);
 		const out = {};
 		for (const f of RADAR_FIELDS) {
 			const top = pr[f].top;
