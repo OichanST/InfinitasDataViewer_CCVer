@@ -234,6 +234,8 @@ IV.model = (() => {
 	// 地力表のランク（上から）。「地力」と「個人差」は別グループにし、同じランクなら地力→個人差の順
 	const ABILITY_RANKS = ["S+", "S", "A+", "A", "B+", "B", "C", "D", "E", "F"];
 	const ABILITY_GOAL = { nomage: "EASY CLEAR", hard: "HARD CLEAR" };
+	// 「次に狙う」の目標。ノマゲは EASY CLEAR の譜面も CLEAR を狙う候補に入れる（地力表の達成数は ABILITY_GOAL のまま）
+	const ABILITY_CAND_GOAL = { nomage: "CLEAR", hard: "HARD CLEAR" };
 
 	/**
 	 * 地力表のグループを作る。mode は "nomage"（EASY 以上で達成）か "hard"（HARD 以上で達成）。
@@ -262,14 +264,14 @@ IV.model = (() => {
 	}
 
 	/**
-	 * 地力表の「次に狙う」候補。遊んだことがあり、まだ目標（ノマゲ=EASY CLEAR、ハード=HARD CLEAR）に届いていない譜面を、
+	 * 地力表の「次に狙う」候補。遊んだことがあり、まだ目標（ノマゲ=CLEAR、ハード=HARD CLEAR）に届いていない譜面を、
 	 * 地力ランクの低い順（地力と個人差は同じランクなら混ぜる）、同じランクなら MISS COUNT の少ない順に並べる。
 	 * 「未定」の譜面と未プレイ（MISS COUNT が無いので比べられない）は入れない。
 	 * 戻り値: [{ c, tier }]
 	 */
 	function abilityCandidates(charts, mode) {
 		const col = mode === "hard" ? "HARD_TIER" : "NOMAGE_TIER";
-		const goal = LAMPS.indexOf(ABILITY_GOAL[mode] || ABILITY_GOAL.nomage);
+		const goal = LAMPS.indexOf(ABILITY_CAND_GOAL[mode] || ABILITY_CAND_GOAL.nomage);
 		const rankOf = (t) => { const m = /^(?:地力|個人差)([SABCDEF]\+?)$/.exec(t); return m ? ABILITY_RANKS.indexOf(m[1]) : -1; };
 		const miss = (c) => (c.miss == null ? Infinity : c.miss);
 		return charts
@@ -592,5 +594,5 @@ IV.model = (() => {
 		return out;
 	}
 
-	return { parseScoreCsv, applyScoreCsv, parseVideoTitle, videoMap, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
+	return { parseScoreCsv, applyScoreCsv, parseVideoTitle, videoMap, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, ABILITY_CAND_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
 })();

@@ -464,7 +464,7 @@
 		const done = groups.reduce((n, g) => n + g.done, 0);
 		$("#abTotal").innerHTML = total && !state.guest ? `${esc(goal)} 以上 <b class="num">${done}</b> / <span class="num">${total}</span>` : "";
 		$("#abEmpty").hidden = total > 0;
-		$("#abCand").innerHTML = state.guest || !total ? "" : abCandHtml(M.abilityCandidates(state.charts, f.abMode), f.abMode, goal);
+		$("#abCand").innerHTML = state.guest || !total ? "" : abCandHtml(M.abilityCandidates(state.charts, f.abMode), f.abMode, M.ABILITY_CAND_GOAL[f.abMode]);
 		$("#abGroups").innerHTML = groups.map((g) => {
 			const s = M.summarize(g.items);
 			const bar = state.guest ? "" : `<div class="bar abBar">${[...M.LAMPS].reverse().concat(M.LOCKED).filter((l) => s.lamps[l] > 0).map((l) =>
