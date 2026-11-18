@@ -166,8 +166,21 @@ IV.api = (() => {
 			async clear() {
 				try { await run("readwrite", (s) => s.clear()); } catch (e) { /* 使えない環境では何もしない */ }
 			},
+			/** キーが prefixes のどれかで始まるデータを消す */
+			async removePrefixed(prefixes) {
+				try {
+					const keys = await run("readonly", (s) => s.getAllKeys());
+					const old = keys.filter((k) => prefixes.some((p) => String(k).startsWith(p)));
+					if (old.length) await run("readwrite", (s) => { old.forEach((k) => s.delete(k)); return s.count(); });
+				} catch (e) { /* 使えない環境では何もしない */ }
+			},
 		};
 	})();
+
+	// もう使わない保存データを消して場所を空ける（2026-11-18〜）
+	//   result:<DJ名> … GAS のプレイリザルト（1人約1.4MB。スコアは CSV、動画は YouTube になった）
+	//   csv:<DJ名>    … ブラウザで読み込んだスコア CSV（CSV ボタンを消した）
+	idb.removePrefixed(["result:", "csv:"]);
 
 	// 以前 localStorage に置いていたデータのキャッシュを消して場所を空ける（設定 pref: は残す）
 	try {
