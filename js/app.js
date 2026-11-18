@@ -12,7 +12,8 @@
 	const DEFAULT = { style: "SP", levels: [12], diffs: [], lamps: [], grades: [], q: "", sort: "level", dir: "asc", hideLocked: false, rival: "", rivalResult: "", view: "list", abMode: "nomage", fdOpen: "", recMode: "rate" };
 	const state = {
 		id: "", guest: false,
-		music: null, results: null, rivals: [], // rivals: [{ id, results }]
+		music: null, rivals: [], // rivals: [{ id, csv: ドライブのスコア CSV }]
+		mv: null, // MV リンク（GAS のリザルトから。M.mvMap の結果）
 		charts: [], view: [], shown: 0,
 		radarMap: new Map(),
 		abilityMap: new Map(),
@@ -20,6 +21,7 @@
 		// スコア CSV { name, csv, at }。あれば GAS のリザルトより優先する。
 		// このブラウザで読み込んだもの（csvLocal）があればそれ、なければドライブに置いたもの（csvDrive）
 		csvLocal: null, csvDrive: null, csv: null,
+		csvChecked: false, // ドライブの CSV を確認し終えたか
 		f: null,
 	};
 
@@ -93,29 +95,35 @@
 		const d = new Date(at);
 		return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 	}
-	let syncAt = 0; // 最後に最新データを取得した時刻
 	function setSync(text) { $("#sync").textContent = text; }
 
 	// ---------- データ読み込み ----------
 	/**
-	 * 自分のリザルト。スコア CSV があれば CSV の値（SP）で上書きする。
-	 * GAS のリザルトは MV リンクと DP のために読む（読めなくても CSV だけで表示する）
+	 * 自分とライバルのリザルトは e-amusement のスコア CSV から作る（GAS のスコアは使わない）。
+	 * 自分の CSV はこのブラウザで読み込んだもの、なければドライブの INFINITAS履歴/<DJ名>/ に置いたもの。
+	 * GAS の getPlayResult は MV リンクのためだけに読む
 	 */
-	function myResults() {
-		if (!state.csv) return state.results;
-		const { results, unmatched } = M.applyScoreCsv(state.music, state.results, state.csv.csv);
+	const csvResults = (csv) => {
+		const { results, unmatched } = M.applyScoreCsv(state.music, state.mv, csv);
 		if (unmatched.length) console.warn("楽曲データに見つからなかった CSV の曲:", unmatched);
 		return results;
-	}
-	const hasResults = () => state.guest || !!state.results || !!state.csv;
+	};
+	// CSV があるか分かるまで（ドライブの確認が済むまで）は描画を待つ
+	const hasResults = () => state.guest || !!state.csv || state.csvChecked;
 	function setCsv() { state.csv = state.csvLocal || state.csvDrive; }
-	const csvSync = () => setSync(`CSV ${csvTime(state.csv.csv.lastPlay)} プレーまで`);
 	/** "2026-10-23 15:41" → "10/23 15:41" */
 	const csvTime = (s) => s ? s.replace(/^\d{4}-0?(\d+)-0?(\d+)/, "$1/$2") : "";
+	function syncText() {
+		if (state.guest) setSync(`${timeText(Date.now())} 時点`);
+		else if (state.csv) setSync(`CSV ${csvTime(state.csv.csv.lastPlay)} プレーまで`);
+		else setSync("スコア CSV がありません");
+	}
 
 	function rebuild() {
 		if (!state.music) return;
-		state.charts = M.build(state.music, state.guest ? null : myResults(), state.rivals, state.radarMap, state.abilityMap);
+		const mine = state.guest || !state.csv ? null : csvResults(state.csv.csv);
+		const rivals = state.rivals.map((rv) => ({ id: rv.id, results: rv.csv ? M.applyScoreCsv(state.music, null, rv.csv).results : null }));
+		state.charts = M.build(state.music, mine, rivals, state.radarMap, state.abilityMap);
 		$("#version").textContent = state.music.version ? `DATA ${state.music.version}` : "";
 		apply();
 	}
@@ -132,67 +140,57 @@
 		let firstPaint = !state.music;
 		if (firstPaint) loading(true, "楽曲データを読み込み中…");
 		setSync("更新を確認中…");
+		const redraw = () => { if (state.music && hasResults()) { loading(false); rebuild(); } };
 		const onMusic = (data, info) => {
 			state.music = data;
 			if (info.updated) toast("楽曲データを更新しました");
-			if (hasResults()) { loading(false); rebuild(); }
+			redraw();
 		};
 		tasks.push(IV.api.loadMusic(onMusic, { force }));
-		const onRadar = (data) => {
-			state.radarMap = M.radarMap(data);
-			if (state.music && hasResults()) { rebuild(); }
-		};
-		tasks.push(IV.api.loadRadar(onRadar, { force }).catch((e) => console.warn("ノーツレーダーの読み込みに失敗しました", e)));
-		const onAbility = (data) => {
-			state.abilityMap = M.abilityMap(data);
-			if (state.music && hasResults()) { rebuild(); }
-		};
-		tasks.push(IV.api.loadAbility(onAbility, { force }).catch((e) => console.warn("地力表の読み込みに失敗しました", e)));
+		tasks.push(IV.api.loadRadar((data) => { state.radarMap = M.radarMap(data); redraw(); }, { force })
+			.catch((e) => console.warn("ノーツレーダーの読み込みに失敗しました", e)));
+		tasks.push(IV.api.loadAbility((data) => { state.abilityMap = M.abilityMap(data); redraw(); }, { force })
+			.catch((e) => console.warn("地力表の読み込みに失敗しました", e)));
 		if (!state.guest) {
-			const onResult = (data, info) => {
-				if (!Array.isArray(data)) throw new Error(`「${state.id}」のプレイリザルトを読み込めませんでした`);
-				state.results = data;
-				if (info.updated && !state.csv) toast("プレイリザルトを更新しました");
-				if (state.music) { loading(false); rebuild(); }
-			};
-			// CSV があるときは、GAS のリザルトは MV リンク用。読めなくても止めない
-			tasks.push(IV.api.loadResult(state.id, onResult, { force }).catch((e) => {
-				if (!state.csv) throw e;
-				console.warn("GAS のリザルト（MV リンク）を読み込めませんでした", e);
-			}));
-			// ドライブに置いたスコア CSV。読めなければ GAS のリザルト（またはこのブラウザで読み込んだ CSV）で表示する
-			const cid = state.id;
-			tasks.push(IV.api.loadDriveCsv(cid, (data, info) => {
-				if (state.id !== cid) return;
+			const id = state.id;
+			// スコア CSV（ドライブ）。読めなくても、このブラウザで読み込んだ CSV があればそれで表示する
+			tasks.push(IV.api.loadDriveCsv(id, (data, info) => {
+				if (state.id !== id) return;
 				state.csvDrive = data ? { name: data.name, csv: data.csv, at: Date.parse(data._mt), drive: true } : null;
+				state.csvChecked = true;
 				setCsv();
 				if (info.updated && data && !state.csvLocal) toast("スコア CSV を更新しました");
-				if (state.music && hasResults()) { loading(false); rebuild(); }
-			}, { force }).catch((e) => console.warn("ドライブのスコア CSV を読み込めませんでした", e)));
+				redraw();
+			}, { force }).catch((e) => {
+				state.csvChecked = true;
+				redraw();
+				throw e;
+			}));
+			// MV リンク（GAS のリザルトから MV だけ使う）。読めなくてもほかの表示には影響させない
+			tasks.push(IV.api.loadResult(id, (data) => {
+				if (state.id !== id || !Array.isArray(data)) return;
+				state.mv = M.mvMap(data);
+				redraw();
+			}, { force }).catch((e) => console.warn("MV リンクを読み込めませんでした", e)));
 			for (const rv of state.rivals) {
-				tasks.push(IV.api.loadResult(rv.id, (data) => { rv.results = data; rebuild(); }, { force }).catch((e) => toast(`${rv.id} の読み込みに失敗しました`)));
+				tasks.push(IV.api.loadDriveCsv(rv.id, (data) => { rv.csv = data ? data.csv : null; redraw(); }, { force })
+					.catch((e) => toast(`${rv.id} のスコア CSV を読み込めませんでした`)));
 			}
 			// 更新履歴（Google ドライブ）。読めなくてもほかの表示には影響させない
-			const id = state.id;
 			tasks.push(IV.api.loadHistory(id, (data) => {
 				if (state.id !== id) return;
 				state.history = data;
 				if (state.charts.length) apply();
 			}, { force }).catch((e) => console.warn("更新履歴の読み込みに失敗しました", e)));
 		}
-		// プレイリザルトを取り込んだ日時（GAS に記録がなければ null → 取得した時刻を出す）
-		const updatedAt = state.guest ? Promise.resolve(null) : IV.api.getUpdatedAt(state.id).catch(() => null);
 		try {
 			await Promise.all(tasks);
-			syncAt = Date.now();
-			const upAt = await updatedAt;
-			if (state.csv) csvSync();
-			else setSync(upAt ? `${timeText(upAt)} 取り込み` : `${timeText(syncAt)} 時点`);
+			syncText();
+			if (!state.guest && !state.csv) toast("スコア CSV がありません。ドライブに置くか、右上の CSV から読み込んでください");
 		} catch (e) {
 			console.error(e);
 			setSync("更新に失敗しました");
 			if (!state.charts.length) {
-				loading(false);
 				toast(e.message || "データを読み込めませんでした");
 			} else {
 				toast("最新データを取得できませんでした（保存済みのデータを表示しています）");
@@ -755,10 +753,11 @@
 	function start(id, guest) {
 		state.id = guest ? "" : id;
 		state.guest = guest;
-		state.results = null;
+		state.mv = null;
 		state.history = null;
 		state.csvLocal = state.csvDrive = state.csv = null;
-		state.rivals = guest ? [] : (IV.api.prefs.get("rivals:" + id, []) || []).map((rid) => ({ id: rid, results: null }));
+		state.csvChecked = false;
+		state.rivals = guest ? [] : (IV.api.prefs.get("rivals:" + id, []) || []).map((rid) => ({ id: rid, csv: null }));
 		if (!guest) IV.api.prefs.set("lastId", id);
 		$("#userName").textContent = guest ? "ゲスト" : id;
 		$("#login").hidden = true;
@@ -771,7 +770,7 @@
 		const c = state.csv;
 		$("#csvStatus").innerHTML = c
 			? `<b>${esc(c.name)}</b>（${c.drive ? "ドライブ" : "このブラウザで読み込み"}）<br><span class="muted">${timeText(c.at)} ${c.drive ? "更新" : "読み込み"}・最終プレー ${esc(c.csv.lastPlay || "-")}・${c.csv.songs.length} 曲</span>`
-			: `<span class="muted">ありません（GAS のプレイリザルトを表示しています）</span>`;
+			: `<span class="muted">ありません</span>`;
 		$("#csvRemove").hidden = !state.csvLocal;
 	}
 	async function readCsvFile(file) {
@@ -784,9 +783,9 @@
 			await IV.api.saveCsv(id, { name: file.name, csv });
 			state.csvLocal = { name: file.name, csv, at: Date.now() };
 			setCsv();
-			const n = state.music ? M.applyScoreCsv(state.music, state.results, csv).unmatched.length : 0;
+			const n = state.music ? M.applyScoreCsv(state.music, state.mv, csv).unmatched.length : 0;
 			toast(`CSV を読み込みました（${csv.songs.length} 曲${n ? `、${n} 曲は楽曲データに見つかりません` : ""}）`);
-			csvSync();
+			syncText();
 			renderCsvDlg();
 			if (state.music) { loading(false); rebuild(); }
 		} catch (e) {
@@ -912,7 +911,7 @@
 			state.csvLocal = null;
 			setCsv();
 			renderCsvDlg();
-			toast(state.csv ? "このブラウザの CSV を消して、ドライブの CSV に戻しました" : "CSV をやめて、GAS のプレイリザルトに戻しました");
+			toast(state.csv ? "このブラウザの CSV を消して、ドライブの CSV に戻しました" : "このブラウザの CSV を消しました");
 			loadAll();
 		});
 		// ファイルを画面にドラッグ＆ドロップしても読み込める
@@ -930,16 +929,8 @@
 			const id = $("#loginId").value.trim();
 			if (!id) return;
 			$("#loginErr").textContent = "";
-			loading(true, "DJ NAMEを確認中…");
-			try {
-				const ok = await IV.api.checkUser(id);
-				loading(false);
-				if (!ok) { $("#loginErr").textContent = `「${id}」は登録されていません。`; return; }
-				start(id, false);
-			} catch (err) {
-				loading(false);
-				$("#loginErr").textContent = "確認できませんでした。通信状態を確認してください。";
-			}
+			// スコアはドライブの CSV（またはこのブラウザで読み込む CSV）なので、DJ NAME の登録は確かめない
+			start(id, false);
 		});
 		$("#guestBtn").addEventListener("click", () => start("", true));
 		// ライバル
@@ -958,11 +949,14 @@
 			if (id === state.id) { $("#rivalErr").textContent = "自分は追加できません。"; return; }
 			if (state.rivals.some((r) => r.id === id)) { $("#rivalErr").textContent = "追加済みです。"; return; }
 			try {
-				if (!(await IV.api.checkUser(id))) { $("#rivalErr").textContent = `「${id}」は登録されていません。`; return; }
-				const rv = { id, results: null };
+				// ライバルもドライブの INFINITAS履歴/<DJ名>/ に置いたスコア CSV と比べる
+				let found = false;
+				const rv = { id, csv: null };
+				await IV.api.loadDriveCsv(id, (data) => { if (data) { found = true; rv.csv = data.csv; } });
+				if (!found) { $("#rivalErr").textContent = `「${id}」のスコア CSV がドライブにありません。`; return; }
 				state.rivals.push(rv); saveRivals(); renderRivalList();
 				$("#rivalId").value = "";
-				await IV.api.loadResult(id, (data) => { rv.results = data; rebuild(); });
+				rebuild();
 			} catch (err) {
 				$("#rivalErr").textContent = "確認できませんでした。";
 			}

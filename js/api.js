@@ -1,16 +1,15 @@
 "use strict";
 /**
- * Google SpreadSheet（Apps Script の Web API）からのデータ取得とキャッシュ。
+ * データの取得とキャッシュ。
  *
- * - API は既存の Inf_GoogleSpreadSheet と同じもの（読み取りだけ使う）
- *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
- *     ?type=getPlayResult&id=DJ名  プレイリザルト [{ TITLE, SPN:{OPEN,CLEARSTATUS,PLAYRESULT,EXSCORE,MISSCOUNT,MV}, ... }]
- *     ?type=checkUser&id=DJ名      { result: true/false }
- *     ?type=getUpdatedAt&id=DJ名   { id, updatedAt: ISO日時 or null }（プレイリザルトを取り込んだ日時）
- * - 取得したデータは IndexedDB に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く（設定だけ localStorage）
- * - 更新履歴とスコア CSV は GAS ではなく Google ドライブの公開フォルダから Drive API（API キー）で読む
+ * - スコア・更新履歴は Google ドライブの公開フォルダから Drive API（API キー）で読む
+ *     INFINITAS履歴/<DJ名>/○○_sp_score.csv（e-amusement のスコア CSV。自分とライバルのスコアはこれだけを使う）
  *     INFINITAS履歴/<DJ名>/history.json（PC の save_history.py がアップロードのたびに書き足す）
- *     INFINITAS履歴/<DJ名>/○○_sp_score.csv（e-amusement のスコア CSV。あれば GAS のリザルトの代わりに使う）
+ * - 楽曲データなどは Google SpreadSheet（Apps Script の Web API。Inf_GoogleSpreadSheet と同じもの、読み取りだけ）
+ *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
+ *     ?type=getRadarData / getAbilityData  ノーツレーダー / 地力表
+ *     ?type=getPlayResult&id=DJ名  プレイリザルト。スコアは使わず、MV リンクだけ拾う
+ * - 取得したデータは IndexedDB に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く（設定だけ localStorage）
  */
 window.IV = window.IV || {};
 
@@ -158,18 +157,12 @@ IV.api = (() => {
 
 	return {
 		loadMusic: (onData, opts) => load("music", { type: "getMusicData" }, onData, opts),
+		/** GAS のプレイリザルト（MV リンクのためだけに読む） */
 		loadResult: (id, onData, opts) => load("result:" + id, { type: "getPlayResult", id }, onData, opts),
 		loadRadar: (onData, opts) => load("radar", { type: "getRadarData" }, onData, opts),
 		loadAbility: (onData, opts) => load("ability", { type: "getAbilityData" }, onData, opts),
 		loadHistory: (id, onData, opts) => load("history:" + id, () => getHistory(id), onData, opts),
 		loadDriveCsv: (id, onData, opts) => load("drivecsv:" + id, () => getDriveCsv(id), onData, opts),
-		checkUser: async (id) => !!(await get({ type: "checkUser", id })).result,
-		/** プレイリザルトを取り込んだ日時（ミリ秒）。記録がない・GAS が未対応なら null */
-		async getUpdatedAt(id) {
-			const r = await get({ type: "getUpdatedAt", id });
-			const t = r && r.updatedAt ? Date.parse(r.updatedAt) : NaN;
-			return Number.isNaN(t) ? null : t;
-		},
 		/**
 		 * 読み込んだスコア CSV（{ name: ファイル名, csv: parseScoreCsv の結果 }）。DJ ごとに IndexedDB に置く。
 		 * ↻ では取り直さない（ファイルを選び直さないと更新できないため）

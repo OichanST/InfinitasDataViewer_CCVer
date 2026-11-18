@@ -1,9 +1,15 @@
 # INFINITAS Viewer（CC Ver）
 
-beatmania IIDX INFINITAS のプレイリザルト（クリアランプ・EXスコア・DJ LEVEL）を、Google スプレッドシートから読み込んでブラウザで見るためのビューア。
+beatmania IIDX INFINITAS のプレイリザルト（クリアランプ・EXスコア・DJ LEVEL）を、e-amusement のスコア CSV から読み込んでブラウザで見るためのビューア。
 
-データは [Inf_GoogleSpreadSheet](https://github.com/OichanST/Inf_GoogleSpreadSheet) と同じ Google Apps Script の Web API から**読むだけ**。
-リザルトの入力・Reflux の TSV 取込は、これまでどおり Inf_GoogleSpreadSheet で行う。
+- **スコア**：e-amusement の「スコアデータ CSV ダウンロード」で取れる `○○_sp_score.csv`。
+  Google ドライブの公開フォルダ `INFINITAS履歴/<DJ名>/` に置いたものを Drive API（API キー）で読む（ファイル名はそのままでよい）。
+  右上の「CSV」ボタンやドラッグ＆ドロップで読み込むと、そのブラウザだけでドライブのものより優先して使う。
+  CSV にある曲の未プレイ譜面は NO PLAY、CSV に無い曲（未購入パックなど）は未解禁として扱う。今は SP だけ。
+- **楽曲データ**（レベル・ノーツ数・BPM）・ノーツレーダー・地力表・MV リンクは、[Inf_GoogleSpreadSheet](https://github.com/OichanST/Inf_GoogleSpreadSheet) と同じ Google Apps Script の Web API から**読むだけ**。
+  GAS のプレイリザルト（getPlayResult）はスコアには使わず、MV リンクだけ拾う。
+
+スコア CSV への移行の経緯と残りの作業は [docs/score-csv-migration.md](docs/score-csv-migration.md)。
 
 ## 使い方
 
@@ -18,8 +24,8 @@ beatmania IIDX INFINITAS のプレイリザルト（クリアランプ・EXス�
    - 検索欄：曲名・アーティスト・ジャンル（スペース区切りでAND）
    - 「条件」：バージョン（収録フォルダ）、CN/BSS の有無、未解禁を隠す、ランプのまとめ選択（未クリア・未HARD・未EXH・未FC）
 3. 集計バー（クリアランプ・DJ LEVEL）や下のボタンを押すと、そのランプ・DJ LEVEL だけに絞り込む（もう一度押すと解除、Ctrl/Shift で複数）。
-4. 一覧の行を押すと、その曲の全譜面のリザルト（ノーツ数・BPM・ランプ・スコア・次のDJ LEVELまでの目安・ミスカウント・ライバルとの差）を表示。
-5. 右上の「ライバル」で DJ NAME を追加すると、「ライバル」タブで比べられる。ライバルごとの WIN / LOSE / EVEN の件数と、譜面ごとの自分とライバルの EX スコア・クリアステータス・差を出す（上の絞り込みが効く。WIN / LOSE / EVEN だけに絞ったり、「ライバルとの差順」で並べたりもできる）。一覧タブにはライバルの情報は出さない。
+4. 一覧の行を押すと、その曲の全譜面のリザルト（ノーツ数・BPM・ランプ・スコア・次のDJ LEVELまでの目安・ミスカウント・プレー回数と最終プレー日時・ライバルとの差）を表示。
+5. 右上の「ライバル」で DJ NAME を追加すると（ライバルもドライブにスコア CSV を置いている必要がある）、「ライバル」タブで比べられる。ライバルごとの WIN / LOSE / EVEN の件数と、譜面ごとの自分とライバルの EX スコア・クリアステータス・差を出す（上の絞り込みが効く。WIN / LOSE / EVEN だけに絞ったり、「ライバルとの差順」で並べたりもできる）。一覧タブにはライバルの情報は出さない。
 6. 「履歴」タブで、INFINITAS を終了してアップロードした回ごとに、前回から変わった譜面（ランプ・DJ LEVEL・EXスコア・ミスカウント）を見られる。曲の詳細にも、その曲の推移（HISTORY）が出る。
    履歴は GAS ではなく Google ドライブの公開フォルダ `INFINITAS履歴/<DJ名>/history.json` を Drive API（API キー）で読む。
    history.json は PC 側の `save_history.py`（upload_on_exit.ps1 がアップロード成功後に呼ぶ）が tracker.tsv を前回と比べて書き足す。

@@ -488,13 +488,27 @@ IV.model = (() => {
 		return (title) => (exact.has(title) ? title : byLight.get(light(title)) || byStrong.get(strong(title)) || null);
 	}
 
+	/** GAS のリザルトから MV リンクだけ取り出す（{ 曲名: { SPA: URL, ... } }）。スコアは使わない */
+	function mvMap(gasResults) {
+		const m = new Map();
+		for (const r of gasResults || []) {
+			const o = {};
+			for (const k in r) if (r[k] && /^https?:\/\//.test(r[k].MV || "")) o[k] = r[k].MV;
+			if (Object.keys(o).length) m.set(r.TITLE, o);
+		}
+		return m;
+	}
+
 	/**
-	 * CSV の内容でリザルトを作る（GAS のリザルトと同じ形）。CSV の style（SP）の譜面は CSV の値で上書きし、
-	 * 反対の style と MV リンクは GAS のリザルト（gasResults、なければ空）のものを使う。
+	 * CSV の内容でリザルトを作る（build に渡す形。GAS のリザルトと同じ形）。MV リンクは mvs（mvMap の結果、なければ無し）から付ける。
 	 * CSV に無い曲（未購入のパックなど）は未解禁、CSV にあって遊んでいない譜面は NO PLAY として扱う。
-	 * 戻り値 { results, unmatched: [CSV の曲名] }
+	 * CSV の反対の style（今は DP）は、CSV にある曲なら NO PLAY、無い曲なら未解禁
+	 * 戻り値 { results, unmatched: [CSV の曲名] }。同じ music と csv なら前の結果を使い回す
 	 */
-	function applyScoreCsv(music, gasResults, csv) {
+	const applyCache = new WeakMap();
+	function applyScoreCsv(music, mvs, csv) {
+		const hit = applyCache.get(csv);
+		if (hit && hit.music === music && hit.mvs === mvs) return hit.out;
 		const match = titleMatcher(music.musicList.map((s) => s.TITLE));
 		const byTitle = new Map();
 		const unmatched = [];
@@ -502,25 +516,26 @@ IV.model = (() => {
 			const t = match(s.title);
 			if (t) byTitle.set(t, s); else unmatched.push(s.title);
 		}
-		const gas = new Map((gasResults || []).map((r) => [r.TITLE, r]));
 		const results = music.musicList.map((song) => {
-			const g = gas.get(song.TITLE) || {};
-			const out = { TITLE: song.TITLE };
-			for (const st of ["SP", "DP"]) for (const d of DIFFS) out[st + d] = g[st + d] || {};
 			const s = byTitle.get(song.TITLE);
-			for (const d of DIFFS) {
-				const key = csv.style + d;
-				const mv = (g[key] || {}).MV || "";
-				const c = s && s.charts[d];
-				out[key] = !c ? { OPEN: "", MV: mv } : {
-					OPEN: "TRUE", CLEARSTATUS: c.lamp === "NO PLAY" ? "" : c.lamp, EXSCORE: c.ex, MISSCOUNT: c.miss ?? "", MV: mv,
-					PLAYS: c.plays, LASTPLAY: c.lastPlay, UPDATED: c.updated,
-				};
+			const mv = (mvs && mvs.get(song.TITLE)) || {};
+			const out = { TITLE: song.TITLE };
+			for (const st of ["SP", "DP"]) {
+				for (const d of DIFFS) {
+					const key = st + d;
+					const c = s && st === csv.style ? s.charts[d] : null;
+					out[key] = c ? {
+						OPEN: "TRUE", CLEARSTATUS: c.lamp === "NO PLAY" ? "" : c.lamp, EXSCORE: c.ex, MISSCOUNT: c.miss ?? "", MV: mv[key] || "",
+						PLAYS: c.plays, LASTPLAY: c.lastPlay, UPDATED: c.updated,
+					} : { OPEN: s ? "TRUE" : "", MV: mv[key] || "" };
+				}
 			}
 			return out;
 		});
-		return { results, unmatched };
+		const out = { results, unmatched };
+		applyCache.set(csv, { music, mvs, out });
+		return out;
 	}
 
-	return { parseScoreCsv, applyScoreCsv, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
+	return { parseScoreCsv, applyScoreCsv, mvMap, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
 })();
