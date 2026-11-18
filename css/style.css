@@ -362,6 +362,13 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 .dchartName b { font-size: 22px; font-weight: normal; margin-left: 2px; }
 .dchartSub { color: var(--muted); font-size: 12px; display: flex; gap: 12px; justify-content: flex-end; }
 .dchartSub b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 14px; }
+/* スマホは今までどおり表の中に譜面・NOTES・BPM を出す（曲名の右には出さない） */
+.dtable .mOnly { display: none; }
+.dtable .dlamp { text-align: left; }
+@media (max-width: 640px) {
+  .dchart { display: none; }
+  .dtable .mOnly { display: table-cell; }
+}
 .dinfo { color: var(--muted); font-size: 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .radarWrap { display: flex; flex-direction: column; align-items: center; margin: 4px 0 12px; }
 .radarCaption { font-size: 11px; letter-spacing: .08em; margin-bottom: 2px; }

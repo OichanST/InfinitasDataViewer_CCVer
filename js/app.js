@@ -736,7 +736,9 @@
 				return `<td class="num">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
 			}).join("");
 			return `<tr class="${x.id === c.id ? "cur" : ""}" style="--dc:var(--d-${x.diff})">
-				<td style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>
+				<td class="lvcell mOnly">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
+				<td class="num mOnly">${x.notes}</td><td class="num mOnly">${esc(x.bpm)}</td>
+				<td class="dlamp" style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>
 				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.played ? `${x.ex}<span class="muted"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.miss ?? "-"}</td>${state.csv ? `<td class="num"${x.lastPlay ? ` title="最終プレー ${esc(x.lastPlay)}"` : ""}>${x.plays || "-"}${x.lastPlay ? `<div class="muted dlast">${esc(csvTime(x.lastPlay))}</div>` : ""}</td>` : ""}
@@ -757,7 +759,7 @@ ${rv}
 			</div>
 			${radarHtml(c)}
 			<div style="overflow-x:auto"><table class="dtable">
-				<thead><tr><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
+				<thead><tr><th class="mOnly">${c.style}</th><th class="mOnly">NOTES</th><th class="mOnly">BPM</th><th class="dlamp">ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
 			${songVideosHtml(c)}
