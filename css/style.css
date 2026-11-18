@@ -340,13 +340,11 @@ dialog { background: var(--panel); color: var(--text); border: 1px solid var(--l
 /* 詳細は表に動画の列があるので少し広め */
 #detail { width: min(860px, calc(100% - 24px)); }
 .dvideo { margin-top: 14px; }
-.dvLinks { border-top: 1px solid var(--line); }
-.dvLinks .mv { display: block; padding: 5px 2px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-/* ランプの幅をそろえて、右の日時の頭をそろえる（PC は正式名、スマホは略記） */
-.dvLamp { display: inline-block; width: 9.5em; }
+/* 1行1本。列（▶ / ランプ / 日時）をそろえる。ランプの列は出ている中でいちばん長いランプの幅（PC は正式名、スマホは略記） */
+.dvLinks { display: grid; grid-template-columns: max-content max-content 1fr; border-top: 1px solid var(--line); }
+.dvLinks .mv { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: 1em; padding: 5px 2px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .dvLamp .lampShort { display: none; }
 @media (max-width: 640px) {
-  .dvLamp { width: 5em; }
   .dvLamp .lampFull { display: none; }
   .dvLamp .lampShort { display: inline; }
 }
