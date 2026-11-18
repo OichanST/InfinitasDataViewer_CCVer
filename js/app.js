@@ -757,12 +757,16 @@ ${rv}
 					<div class="dchartSub"><span><b>${c.notes}</b> NOTES</span><span>BPM <b>${esc(c.bpm)}</b></span></div>
 				</div>
 			</div>
-			${radarHtml(c)}
+			<div class="dbody">
+			<div class="dleft">${radarHtml(c)}</div>
+			<div class="dright">
 			<div style="overflow-x:auto"><table class="dtable">
 				<thead><tr><th class="mOnly">${c.style}</th><th class="mOnly">NOTES</th><th class="mOnly">BPM</th><th class="dlamp">ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
 			${songVideosHtml(c)}
+			</div>
+			</div>
 			${songHistoryHtml(c)}`;
 		$("#detail").showModal();
 		// 開いたときに最初のリンク（動画）に枠が付かないよう、自動のフォーカスを外す
