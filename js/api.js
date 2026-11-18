@@ -8,8 +8,9 @@
  *     ?type=checkUser&id=DJ名      { result: true/false }
  *     ?type=getUpdatedAt&id=DJ名   { id, updatedAt: ISO日時 or null }（プレイリザルトを取り込んだ日時）
  * - 取得したデータは IndexedDB に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く（設定だけ localStorage）
- * - 更新履歴は GAS ではなく Google ドライブの公開フォルダから Drive API（API キー）で読む
+ * - 更新履歴とスコア CSV は GAS ではなく Google ドライブの公開フォルダから Drive API（API キー）で読む
  *     INFINITAS履歴/<DJ名>/history.json（PC の save_history.py がアップロードのたびに書き足す）
+ *     INFINITAS履歴/<DJ名>/○○_sp_score.csv（e-amusement のスコア CSV。あれば GAS のリザルトの代わりに使う）
  */
 window.IV = window.IV || {};
 
@@ -21,13 +22,32 @@ IV.api = (() => {
 	const HISTORY_FOLDER = "1wDdpLEK_TUE9E-MRndHfS2NvinGd6272";
 
 	async function driveFind(parent, name) {
-		const q = `'${parent}' in parents and name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}' and trashed = false`;
+		return (await driveList(parent, `name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`))[0] || null;
+	}
+	/** フォルダの中のファイル（新しい順）。cond は Drive API の検索条件 */
+	async function driveList(parent, cond) {
+		const q = `'${parent}' in parents${cond ? ` and ${cond}` : ""} and trashed = false`;
 		const url = "https://www.googleapis.com/drive/v3/files?" + new URLSearchParams({ q, fields: "files(id,name,modifiedTime)", key: DRIVE_KEY });
 		const res = await fetch(url);
-		if (!res.ok) throw new Error(`履歴の取得に失敗しました（HTTP ${res.status}）`);
+		if (!res.ok) throw new Error(`ドライブの取得に失敗しました（HTTP ${res.status}）`);
 		const files = (await res.json()).files || [];
 		files.sort((a, b) => (b.modifiedTime || "").localeCompare(a.modifiedTime || ""));
-		return files[0] || null;
+		return files;
+	}
+	/**
+	 * ドライブの INFINITAS履歴/<DJ名>/ に置いたスコア CSV（e-amusement の「○○_sp_score.csv」。名前はそのままでよい。複数あれば新しいもの）。
+	 * { name, csv: parseScoreCsv の結果, _mt: 更新時刻 }。置いていなければ null。
+	 * 履歴と同じく、更新時刻がキャッシュと同じならダウンロードしない
+	 */
+	async function getDriveCsv(id) {
+		const dir = await driveFind(HISTORY_FOLDER, id);
+		const file = dir && (await driveList(dir.id)).find((f) => /sp_score\.csv$/i.test(f.name));
+		if (!file) return null;
+		const cached = await idb.read("drivecsv:" + id);
+		if (cached && cached.data && cached.data._mt === file.modifiedTime) return cached.data;
+		const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?` + new URLSearchParams({ alt: "media", key: DRIVE_KEY }));
+		if (!res.ok) throw new Error(`スコア CSV の取得に失敗しました（HTTP ${res.status}）`);
+		return { name: file.name, csv: IV.model.parseScoreCsv(await res.text(), file.name), _mt: file.modifiedTime };
 	}
 	/**
 	 * 履歴 { dj, sessions: [...], _mt: 更新時刻 }。まだ無い DJ は { sessions: [] }
@@ -108,6 +128,9 @@ IV.api = (() => {
 				try { await run("readwrite", (s) => s.put({ at: Date.now(), data }, key)); }
 				catch (e) { console.warn("キャッシュに保存できませんでした:", key, e); }
 			},
+			async remove(key) {
+				try { await run("readwrite", (s) => s.delete(key)); } catch (e) { /* 使えない環境では何もしない */ }
+			},
 			async clear() {
 				try { await run("readwrite", (s) => s.clear()); } catch (e) { /* 使えない環境では何もしない */ }
 			},
@@ -139,6 +162,7 @@ IV.api = (() => {
 		loadRadar: (onData, opts) => load("radar", { type: "getRadarData" }, onData, opts),
 		loadAbility: (onData, opts) => load("ability", { type: "getAbilityData" }, onData, opts),
 		loadHistory: (id, onData, opts) => load("history:" + id, () => getHistory(id), onData, opts),
+		loadDriveCsv: (id, onData, opts) => load("drivecsv:" + id, () => getDriveCsv(id), onData, opts),
 		checkUser: async (id) => !!(await get({ type: "checkUser", id })).result,
 		/** プレイリザルトを取り込んだ日時（ミリ秒）。記録がない・GAS が未対応なら null */
 		async getUpdatedAt(id) {
@@ -146,6 +170,13 @@ IV.api = (() => {
 			const t = r && r.updatedAt ? Date.parse(r.updatedAt) : NaN;
 			return Number.isNaN(t) ? null : t;
 		},
+		/**
+		 * 読み込んだスコア CSV（{ name: ファイル名, csv: parseScoreCsv の結果 }）。DJ ごとに IndexedDB に置く。
+		 * ↻ では取り直さない（ファイルを選び直さないと更新できないため）
+		 */
+		readCsv: async (id) => { const v = await idb.read("csv:" + id); return v ? { ...v.data, at: v.at } : null; },
+		saveCsv: (id, data) => idb.write("csv:" + id, data),
+		removeCsv: (id) => idb.remove("csv:" + id),
 		/** データのキャッシュ（IndexedDB）を全部消す。設定は残す */
 		clearCache: () => idb.clear(),
 		prefs: {

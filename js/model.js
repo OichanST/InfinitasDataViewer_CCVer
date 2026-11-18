@@ -103,6 +103,8 @@ IV.model = (() => {
 						ex, miss: played && r.MISSCOUNT !== "" && r.MISSCOUNT != null && r.MISSCOUNT !== "-" ? Number(r.MISSCOUNT) : null,
 						grade: g.grade, gradeDetail: g.detail, rate: g.rate,
 						mv: /^https?:\/\//.test(r.MV || "") ? r.MV : "",
+						// スコア CSV から読んだときだけ入る（GAS のリザルトには無い）
+						plays: r.PLAYS ?? null, lastPlay: r.LASTPLAY || "",
 						searchText,
 						radar: radarMap.get(song.TITLE + "|" + key) || null,
 						ability: abilityMap.get(song.TITLE + "|" + key) || abilityMap.get("~" + looseTitle(song.TITLE) + "|" + key) || null,
@@ -161,6 +163,8 @@ IV.model = (() => {
 			miss: (a, b) => (a.miss ?? 1e9) - (b.miss ?? 1e9),
 			bpm: (a, b) => a.bpmNum - b.bpmNum,
 			notes: (a, b) => a.notes - b.notes,
+			plays: (a, b) => (a.plays ?? -1) - (b.plays ?? -1),
+			lastPlay: (a, b) => (a.lastPlay || "").localeCompare(b.lastPlay || ""),
 			radarNotes: (a, b) => (a.radar?.NOTES ?? -1) - (b.radar?.NOTES ?? -1),
 			radarPeak: (a, b) => (a.radar?.PEAK ?? -1) - (b.radar?.PEAK ?? -1),
 			radarScratch: (a, b) => (a.radar?.SCRATCH ?? -1) - (b.radar?.SCRATCH ?? -1),
@@ -379,14 +383,21 @@ IV.model = (() => {
 	 * 更新履歴（Google ドライブの history.json）を、新しい順の回ごとにまとめる。
 	 * 変化は [曲名, "SPA", [ランプ, EX, MISS] or null, [ランプ, EX, MISS]]。譜面が一覧にあれば c に入る（DJ LEVEL・詳細表示用）
 	 */
+	const matcherCache = new WeakMap();
 	function historySessions(history, charts) {
 		const byId = new Map(charts.map((c) => [c.id, c]));
+		// スコア CSV から作った履歴は曲名が CSV の表記（「，」や末尾の空白など）なので、楽曲データの曲名に合わせる
+		// （絞り込みのたびに呼ばれるので、一覧が同じなら作り直さない）
+		if (!matcherCache.has(charts)) matcherCache.set(charts, titleMatcher([...new Set(charts.map((c) => c.title))]));
+		const match = matcherCache.get(charts);
 		const sessions = ((history && history.sessions) || []).map((s) => {
-			const changes = (s.changes || []).map(([title, key, b, a]) => {
+			const changes = (s.changes || []).map(([rawTitle, key, b, a]) => {
+				const title = match(rawTitle) || rawTitle;
 				const c = byId.get(`${key}|${title}`) || null;
 				const side = (v) => {
 					if (!v) return null;
-					const [lamp, ex, miss] = v;
+					const [rawLamp, ex, miss] = v;
+					const lamp = rawLamp === "FULLCOMBO CLEAR" ? "FULL COMBO" : rawLamp;
 					const g = c && lamp !== "NO PLAY" ? grade(c.notes, ex) : { grade: "", detail: "", rate: 0 };
 					return { lamp, lampIdx: LAMPS.indexOf(lamp), ex, miss, grade: g.grade, rate: g.rate };
 				};
@@ -406,5 +417,110 @@ IV.model = (() => {
 		return sessions.sort((a, b) => b.at - a.at);
 	}
 
-	return { historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
+	// ---------- e-amusement のスコア CSV（○○_sp_score.csv） ----------
+	/** カンマ区切りを行・列に分ける（"..." で囲まれた値にも対応） */
+	function splitCsv(text) {
+		const rows = [];
+		let row = [], cell = "", q = false;
+		for (let i = 0; i < text.length; i++) {
+			const ch = text[i];
+			if (q) {
+				if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+				else cell += ch;
+			} else if (ch === '"' && cell === "") q = true;
+			else if (ch === ",") { row.push(cell); cell = ""; }
+			else if (ch === "\n" || ch === "\r") {
+				if (ch === "\r" && text[i + 1] === "\n") i++;
+				row.push(cell); rows.push(row); row = []; cell = "";
+			} else cell += ch;
+		}
+		if (cell || row.length) { row.push(cell); rows.push(row); }
+		return rows.filter((r) => r.some((c) => c !== ""));
+	}
+
+	/**
+	 * スコア CSV を読む。戻り値 { style, songs: [{ title, version, charts: { B: { lamp, ex, miss, plays, lastPlay, updated }, ... } }], lastPlay }
+	 * CSV のクリアタイプは "FULLCOMBO CLEAR" だけビューアの "FULL COMBO" と表記が違う
+	 */
+	function parseScoreCsv(text, fileName = "") {
+		const rows = splitCsv(text.replace(/^﻿/, ""));
+		const head = rows.shift() || [];
+		const col = (name) => head.indexOf(name);
+		const iTitle = col("タイトル");
+		if (iTitle < 0 || col("ANOTHER スコア") < 0) throw new Error("e-amusement のスコア CSV ではないようです");
+		const style = /_dp_score/i.test(fileName) ? "DP" : "SP";
+		const date = (s) => (/^\d{4}-\d{2}-\d{2}/.test(s || "") ? s : "");
+		let lastPlay = "";
+		const songs = rows.map((r) => {
+			const charts = {};
+			for (const d of DIFFS) {
+				const n = DIFF_NAMES[d];
+				const at = (k) => r[col(`${n} ${k}`)] ?? "";
+				let lamp = at("クリアタイプ");
+				if (lamp === "FULLCOMBO CLEAR") lamp = "FULL COMBO";
+				const lp = date(at("最終プレー日時"));
+				if (lp > lastPlay) lastPlay = lp;
+				charts[d] = {
+					lamp, ex: Number(at("スコア")) || 0, miss: /^\d+$/.test(at("ミスカウント")) ? Number(at("ミスカウント")) : null,
+					plays: Number(at("プレー回数")) || 0, lastPlay: lp, updated: date(at("最終スコア更新時刻")),
+				};
+			}
+			return { title: r[iTitle], version: r[col("バージョン")] || "", charts };
+		});
+		return { style, songs, lastPlay };
+	}
+
+	/**
+	 * CSV の曲名を楽曲データの曲名に合わせる。CSV は「,」が「，」、「"」が抜けている、末尾に空白があるなど表記がゆれるので、
+	 * 完全一致 → 空白と全角半角だけそろえて一致 → 記号も無視して一致、の順に試す（あとの2つは候補が1曲に決まるときだけ。
+	 * 「SHOOTING STAR」と「Shooting Star」のように大文字小文字だけ違う別の曲があるため）
+	 */
+	function titleMatcher(titles) {
+		const exact = new Set(titles);
+		const light = (s) => String(s).normalize("NFKC").replace(/\s+/g, " ").trim();
+		const strong = (s) => looseTitle(String(s).replace(/ƒ/g, "f").replace(/[･・…]/g, ""));
+		const idx = (fn) => {
+			const m = new Map();
+			for (const t of exact) { const k = fn(t); m.set(k, m.has(k) ? null : t); }
+			return m;
+		};
+		const byLight = idx(light), byStrong = idx(strong);
+		return (title) => (exact.has(title) ? title : byLight.get(light(title)) || byStrong.get(strong(title)) || null);
+	}
+
+	/**
+	 * CSV の内容でリザルトを作る（GAS のリザルトと同じ形）。CSV の style（SP）の譜面は CSV の値で上書きし、
+	 * 反対の style と MV リンクは GAS のリザルト（gasResults、なければ空）のものを使う。
+	 * CSV に無い曲（未購入のパックなど）は未解禁、CSV にあって遊んでいない譜面は NO PLAY として扱う。
+	 * 戻り値 { results, unmatched: [CSV の曲名] }
+	 */
+	function applyScoreCsv(music, gasResults, csv) {
+		const match = titleMatcher(music.musicList.map((s) => s.TITLE));
+		const byTitle = new Map();
+		const unmatched = [];
+		for (const s of csv.songs) {
+			const t = match(s.title);
+			if (t) byTitle.set(t, s); else unmatched.push(s.title);
+		}
+		const gas = new Map((gasResults || []).map((r) => [r.TITLE, r]));
+		const results = music.musicList.map((song) => {
+			const g = gas.get(song.TITLE) || {};
+			const out = { TITLE: song.TITLE };
+			for (const st of ["SP", "DP"]) for (const d of DIFFS) out[st + d] = g[st + d] || {};
+			const s = byTitle.get(song.TITLE);
+			for (const d of DIFFS) {
+				const key = csv.style + d;
+				const mv = (g[key] || {}).MV || "";
+				const c = s && s.charts[d];
+				out[key] = !c ? { OPEN: "", MV: mv } : {
+					OPEN: "TRUE", CLEARSTATUS: c.lamp === "NO PLAY" ? "" : c.lamp, EXSCORE: c.ex, MISSCOUNT: c.miss ?? "", MV: mv,
+					PLAYS: c.plays, LASTPLAY: c.lastPlay, UPDATED: c.updated,
+				};
+			}
+			return out;
+		});
+		return { results, unmatched };
+	}
+
+	return { parseScoreCsv, applyScoreCsv, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
 })();

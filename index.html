@@ -8,13 +8,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kdam+Thmor+Pro&family=Saira+Semi+Expanded:wght@500;600&family=M+PLUS+1p:wght@500&display=swap" rel="stylesheet">
 <!-- JS/CSS を変えたら ?v= の番号を上げる（ブラウザに古いファイルが残って新旧が混ざるのを防ぐ） -->
-<link rel="stylesheet" href="css/style.css?v=20261114b">
+<link rel="stylesheet" href="css/style.css?v=20261118b">
 </head>
 <body>
 <header class="top">
   <h1>INFINITAS <span>Viewer</span></h1>
   <button type="button" class="user" id="userBtn" title="表示するDJを切り替える"><span id="userName">-</span></button>
   <span class="sync" id="sync"></span>
+  <button type="button" class="icon" id="csvBtn" title="e-amusement のスコア CSV を読み込む">CSV</button>
   <button type="button" class="icon" id="rivalBtn" title="ライバル">ライバル</button>
   <button type="button" class="icon" id="reloadBtn" title="最新のデータを取得する">↻</button>
 </header>
@@ -94,6 +95,8 @@
         <option value="miss">ミスカウント順</option>
         <option value="bpm">BPM順</option>
         <option value="notes">ノーツ数順</option>
+        <option value="plays">プレー回数順（CSV）</option>
+        <option value="lastPlay">最終プレー日時順（CSV）</option>
         <option value="radarNotes">レーダーNOTES順</option>
         <option value="radarPeak">レーダーPEAK順</option>
         <option value="radarScratch">レーダーSCRATCH順</option>
@@ -158,13 +161,26 @@
   <form method="dialog"><button class="close" aria-label="閉じる">×</button></form>
 </dialog>
 
+<!-- スコア CSV -->
+<dialog id="csvDlg">
+  <h2>スコア CSV</h2>
+  <p class="hint">e-amusement の「スコアデータ CSV ダウンロード」で取れる <code>_sp_score.csv</code> を使うと、プレイリザルト（SP）を CSV の内容で表示します。<br>
+    Google ドライブの <code>INFINITAS履歴/DJ名/</code> に置けば、どの端末からでも読みます（ファイル名はそのままでよい）。下のボタンやドラッグ＆ドロップで読み込んだ CSV は、このブラウザだけで使い、ドライブのものより優先します。<br>レベル・ノーツ数などの楽曲データと、MV リンク・DP・ライバルは今までどおり Google スプレッドシートから読みます。</p>
+  <p id="csvStatus"></p>
+  <div class="row">
+    <label class="filebtn">ファイルを選ぶ<input type="file" id="csvFile" accept=".csv,text/csv" hidden></label>
+    <button type="button" id="csvRemove">このブラウザの CSV を消す</button>
+  </div>
+  <form method="dialog"><button class="close" aria-label="閉じる">×</button></form>
+</dialog>
+
 <div class="toast" id="toast" hidden></div>
 <div class="loading" id="loading" hidden><div class="spinner"></div><span id="loadingText">読み込み中…</span></div>
 
 <footer class="foot"><span id="version"></span></footer>
 
-<script src="js/api.js?v=20261114b"></script>
-<script src="js/model.js?v=20261114b"></script>
-<script src="js/app.js?v=20261114b"></script>
+<script src="js/api.js?v=20261118b"></script>
+<script src="js/model.js?v=20261118b"></script>
+<script src="js/app.js?v=20261118b"></script>
 </body>
 </html>

@@ -53,6 +53,8 @@ button { cursor: pointer; }
 .login input { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; font-size: 16px; }
 .row { display: flex; gap: 8px; margin-top: 12px; }
 .row button, dialog .row button { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); }
+.row .filebtn { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); text-align: center; cursor: pointer; }
+.dtable .dlast { font-size: 11px; white-space: nowrap; }
 .primary { background: var(--accent) !important; color: #00202e !important; border-color: var(--accent) !important; font-weight: 700; }
 
 /* 絞り込み */
