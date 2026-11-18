@@ -340,8 +340,8 @@ dialog { background: var(--panel); color: var(--text); border: 1px solid var(--l
 /* 詳細は表に動画の列があるので少し広め */
 #detail { width: min(860px, calc(100% - 24px)); }
 .dvideo { margin-top: 14px; }
-.dvLinks { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 4px; border-top: 1px solid var(--line); }
-.dvLinks .mv { white-space: nowrap; }
+.dvLinks { border-top: 1px solid var(--line); }
+.dvLinks .mv { display: block; padding: 5px 2px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 /* 数字用フォント（Kdam Thmor Pro）は ( ) が [ ] のような形になるので、括弧だけ別のフォントにする */
 .paren { font-family: "Segoe UI", system-ui, sans-serif; }
 dialog::backdrop { background: rgba(0,0,0,.6); }

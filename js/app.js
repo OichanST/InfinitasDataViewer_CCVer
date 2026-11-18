@@ -707,7 +707,7 @@
 			</svg>
 		</div>`;
 	}
-	/** 詳細の表の下の VIDEO 欄: その譜面の動画を新しい順に横並び（「▶ ランプ 日付」） */
+	/** 詳細の表の下の VIDEO 欄: その譜面の動画を新しい順に縦に並べる（1行1本「▶ ランプ 日付」） */
 	function songVideosHtml(c) {
 		if (!c.videos.length) return "";
 		const links = c.videos.map((v) => {
@@ -753,6 +753,8 @@ ${rv}
 			${songVideosHtml(c)}
 			${songHistoryHtml(c)}`;
 		$("#detail").showModal();
+		// 開いたときに最初のリンク（動画）に枠が付かないよう、自動のフォーカスを外す
+		if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
 	}
 
 	// ---------- ライバル ----------
