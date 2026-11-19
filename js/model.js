@@ -39,8 +39,9 @@ IV.model = (() => {
 		return { grade: "F", detail, rate };
 	}
 
+	/** 譜面の BPM。music.tsv（2026-11-19〜）は譜面ごとに持つ。GAS の頃の customBPM（譜面ごとの例外）も読める */
 	function bpmOf(song, key, customBPM) {
-		return (customBPM && customBPM[song.TITLE] && customBPM[song.TITLE][key]) || song.BPM || "";
+		return (song[key] && song[key].BPM) || (customBPM && customBPM[song.TITLE] && customBPM[song.TITLE][key]) || song.BPM || "";
 	}
 
 	// BPM の並べ替え用の数値（"123-135" は最大値）
@@ -57,6 +58,11 @@ IV.model = (() => {
 		"SINOBUZ", "CANNON BALLERS", "Rootage", "HEROIC VERSE", "BISTROVER", "Cast Hour", "RESIDENT", "EPOLIS", "Pinky Crush", "Sparkle Shower", "INFINITAS"];
 	const folderKey = (s) => String(s || "").toLowerCase().replace(/\s+/g, "");
 	const FOLDER_BY_KEY = new Map(FOLDERS.map((f) => [folderKey(f), f]));
+	/**
+	 * music.tsv の folder（ゲームのバージョン番号）→ フォルダ名。0 = 1st style（IIDX）… 33 = Sparkle Shower は FOLDERS の並びと同じ、80 = INFINITAS。
+	 * 2026-11-19 に GAS の楽曲データの FOLDER と全曲突き合わせて決めた。新しいバージョンが出たら FOLDERS の INFINITAS の前に足す
+	 */
+	const folderOfNumber = (n) => (n === 80 ? "INFINITAS" : n >= 0 && n < FOLDERS.length - 1 ? FOLDERS[n] : `ver.${n}`);
 	/** フォルダ名の表記ゆれ（"CastHour" / "5th Style" など）をそろえる */
 	const normFolder = (s) => FOLDER_BY_KEY.get(folderKey(s)) || String(s || "");
 	/** フォルダの並び順（知らないフォルダは最後に名前順） */
@@ -95,7 +101,8 @@ IV.model = (() => {
 						song, key, style, diff: d,
 						title: song.TITLE, artist: song.ARTIST || "", genre: song.GENRE || "", folder: normFolder(song.FOLDER), pkg,
 						level: Number(c.DIFFICULT), notes: Number(c.NOTES) || 0,
-						cn: c.CN || "", bss: c.BSS || "",
+						// HCN か HBSS がある（ゲームのノーツレーダーの「HELL」札）。music.tsv の hell 列。GAS の頃は CN/BSS 列から
+						hell: !!c.HELL || c.CN === "HCN" || c.BSS === "HBSS",
 						// BPM に "-" があれば（例: 150-300）ソフラン曲
 						soflan: String(bpm).includes("-") ? "SOF-LAN" : "",
 						bpm, bpmNum: bpmValue(bpm),
@@ -204,6 +211,38 @@ IV.model = (() => {
 			}
 			return s;
 		});
+	}
+
+	/**
+	 * 楽曲データ。Reflux が書き出す music.tsv（ドライブの INFINITAS履歴/music.tsv）を GAS の getMusicData と同じ形
+	 * { version, musicList: [{ TITLE, ARTIST, GENRE, FOLDER, BPM, SPN: { DIFFICULT, NOTES, BPM, HELL }, ... }], pkgAssign } にする。
+	 * 列: id, title, artist, genre, folder（バージョン番号）, label（パック ID）, 譜面ごとに「<SPB…DPL> level / notes / bpm / hell」。
+	 * 1行目が "# " で始まればゲームのバージョン（upload_radar.py が付ける）。BEGINNER は使わない（ユーザー指定）
+	 */
+	function parseMusicTsv(text) {
+		let lines = String(text).replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
+		let version = "";
+		if (lines[0] && lines[0].startsWith("# ")) { version = lines[0].slice(2).trim(); lines = lines.slice(1); }
+		const head = lines[0].split("\t");
+		const col = Object.fromEntries(head.map((h, i) => [h, i]));
+		const KEYS = ["SPN", "SPH", "SPA", "SPL", "DPN", "DPH", "DPA", "DPL"];
+		const musicList = [], pkgAssign = {};
+		for (const line of lines.slice(1)) {
+			const c = line.split("\t");
+			const v = (name) => c[col[name]] ?? "";
+			const song = { TITLE: v("title"), ARTIST: v("artist"), GENRE: v("genre"), FOLDER: folderOfNumber(Number(v("folder"))) };
+			for (const k of KEYS) {
+				const level = Number(v(`${k} level`));
+				if (!level) continue;
+				song[k] = { DIFFICULT: level, NOTES: Number(v(`${k} notes`)) || 0, BPM: v(`${k} bpm`), HELL: v(`${k} hell`) === "1" };
+			}
+			const firstChart = KEYS.map((k) => song[k]).find(Boolean);
+			if (!firstChart) continue;
+			song.BPM = (song.SPA || firstChart).BPM;
+			if (v("label")) pkgAssign[song.TITLE] = v("label");
+			musicList.push(song);
+		}
+		return { version, musicList, pkgAssign };
 	}
 
 	/** ノーツレーダーの一覧を "曲名|SPA" のようなキーで引けるMapにする */
@@ -594,5 +633,5 @@ IV.model = (() => {
 		return out;
 	}
 
-	return { parseScoreCsv, applyScoreCsv, parseVideoTitle, videoMap, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, ABILITY_CAND_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
+	return { parseMusicTsv, parseScoreCsv, applyScoreCsv, parseVideoTitle, videoMap, historySessions, DIFFS, DIFF_NAMES, LAMPS, LAMP_SHORT, GRADES, LOCKED, ABILITY_GOAL, ABILITY_CAND_GOAL, RADAR_FIELDS, playerRadar, radarRecommend, radarRecommendScore, folderOrder, grade, build, filter, sort, summarize, rivalSummary, radarMap, abilityMap, abilityGroups, abilityCandidates };
 })();

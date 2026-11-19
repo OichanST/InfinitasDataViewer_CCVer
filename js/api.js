@@ -5,18 +5,16 @@
  * - スコア・更新履歴は Google ドライブの公開フォルダから Drive API（API キー）で読む
  *     INFINITAS履歴/<DJ名>/latest.csv（今のスコア。e-amusement のスコア CSV。自分とライバルのスコアはこれだけを使う）
  *     INFINITAS履歴/<DJ名>/history.json（PC の save_history_csv.py が INFINITAS 終了のたびに書き足す）
- *     INFINITAS履歴/radar.tsv（ノーツレーダー。Reflux が書き出す radar.tsv をそのまま置く。2026-11-19 に GAS から移した）
- * - 楽曲データなどは Google SpreadSheet（Apps Script の Web API。Inf_GoogleSpreadSheet と同じもの、読み取りだけ）
- *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
- * - 地力表（SP☆12）はこのリポジトリの data/iidx_sp12_table_edited.csv を直接読む（2026-11-19 に GAS から移した）
- *   GAS のプレイリザルト（getPlayResult）は使わない（スコアは CSV、MV は YouTube）
+ *     INFINITAS履歴/music.tsv（楽曲データ。Reflux が書き出す music.tsv。家の PC の upload_radar.py が先頭にゲームのバージョンを付けて置く）
+ *     INFINITAS履歴/radar.tsv（ノーツレーダー。Reflux が書き出す radar.tsv をそのまま置く）
+ * - 地力表（SP☆12）はこのリポジトリの data/iidx_sp12_table_edited.csv を直接読む
+ * - 2026-11-19 に楽曲データ・ノーツレーダー・地力表を GAS（Google スプレッドシート）から移し、GAS は一切使わなくなった
  * - MV（プレー動画）は YouTube Data API（API キー）でチャンネルのアップロード動画の一覧を読み、タイトルから譜面に割り当てる（model.js の videoMap）
  * - 取得したデータは IndexedDB に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く（設定だけ localStorage）
  */
 window.IV = window.IV || {};
 
 IV.api = (() => {
-	const ENDPOINT = "https://script.google.com/macros/s/AKfycbxIaQ6fbvHINLb4pdBMsrXVcWnpeRGsa9jqwUXQNtKQWNh_SbA5kTHUQ1o7_NvpMGF4Hg/exec";
 	const PREFIX = "ivcc:";
 	// API キー（ページに書くので誰でも見られる。使える API を絞って守る）
 	// Google ドライブ（スコア CSV・更新履歴）。キーは Drive API だけに制限してある。フォルダは「リンクを知っている全員」が閲覧可
@@ -102,6 +100,20 @@ IV.api = (() => {
 	}
 
 	/**
+	 * 楽曲データ。ドライブの INFINITAS履歴/music.tsv（Reflux が書き出す）を model.js の parseMusicTsv で GAS の頃と同じ形にする。
+	 * 置いていなければエラー（楽曲データが無いと何も出せない）。更新時刻がキャッシュと同じならダウンロードしない
+	 */
+	async function getMusic() {
+		const file = await driveFind(HISTORY_FOLDER, "music.tsv");
+		if (!file) throw new Error("楽曲データ（music.tsv）がドライブにありません");
+		const cached = await idb.read("drivemusic");
+		if (cached && cached.data && cached.data._mt === file.modifiedTime) return cached.data;
+		const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?` + new URLSearchParams({ alt: "media", key: DRIVE_KEY }));
+		if (!res.ok) throw new Error(`楽曲データの取得に失敗しました（HTTP ${res.status}）`);
+		return { ...IV.model.parseMusicTsv(await res.text()), _mt: file.modifiedTime };
+	}
+
+	/**
 	 * ノーツレーダー。ドライブの INFINITAS履歴/radar.tsv（Reflux の radar.tsv。列は id, title, difficulty, level, notes, peak, scratch, sof-lan, charge, chord）を
 	 * GAS の getRadarData と同じ形 { list: [{ TITLE, TYPE, NOTES, PEAK, SCRATCH, "SOF-LAN", CHARGE, CHORD }], _mt } にする。
 	 * 置いていなければ list は空。更新時刻がキャッシュと同じならダウンロードしない
@@ -171,12 +183,6 @@ IV.api = (() => {
 		});
 	}
 
-	async function get(params) {
-		const url = ENDPOINT + "?" + new URLSearchParams(params).toString();
-		const res = await fetch(url, { redirect: "follow" });
-		if (!res.ok) throw new Error(`データの取得に失敗しました（HTTP ${res.status}）`);
-		return res.json();
-	}
 
 	/** 小さな設定（絞り込み条件・ライバル一覧・前回の DJ NAME）は localStorage に置く（起動時にすぐ読みたいので同期で読める方） */
 	const cache = {
@@ -253,7 +259,8 @@ IV.api = (() => {
 	//   csv:<DJ名>    … ブラウザで読み込んだスコア CSV（CSV ボタンを消した）
 	//   radar         … GAS のノーツレーダー（2026-11-19 からドライブの radar.tsv。キーは driveradar）
 	//   ability       … GAS の地力表（2026-11-19 からリポジトリの data/iidx_sp12_table_edited.csv。キーは sp12table）
-	idb.removePrefixed(["result:", "csv:", "radar", "ability"]);
+	//   music         … GAS の楽曲データ（2026-11-19 からドライブの music.tsv。キーは drivemusic）
+	idb.removePrefixed(["result:", "csv:", "radar", "ability", "music"]);
 
 	// 以前 localStorage に置いていたデータのキャッシュを消して場所を空ける（設定 pref: は残す）
 	try {
@@ -264,10 +271,10 @@ IV.api = (() => {
 	 * キャッシュがあればすぐ onData に渡し、そのあと最新を取得して内容が変わっていれば再度 onData に渡す。
 	 * キャッシュがなければ取得を待って onData に渡す。戻り値は取得完了の Promise。
 	 */
-	async function load(key, params, onData, { force = false } = {}) {
+	async function load(key, fetcher, onData, { force = false } = {}) {
 		const cached = force ? null : await idb.read(key);
 		if (cached) onData(cached.data, { fromCache: true, at: cached.at });
-		const fresh = typeof params === "function" ? await params() : await get(params);
+		const fresh = await fetcher();
 		const changed = !cached || JSON.stringify(cached.data) !== JSON.stringify(fresh);
 		idb.write(key, fresh); // 書き込みは待たない（表示を先に進める）
 		if (changed) onData(fresh, { fromCache: false, at: Date.now(), updated: !!cached });
@@ -275,7 +282,7 @@ IV.api = (() => {
 	}
 
 	return {
-		loadMusic: (onData, opts) => load("music", { type: "getMusicData" }, onData, opts),
+		loadMusic: (onData, opts) => load("drivemusic", getMusic, onData, opts),
 		/** onData には GAS の頃と同じ配列を渡す */
 		loadRadar: (onData, opts) => load("driveradar", getRadar, (d, info) => onData(d.list, info), opts),
 		loadAbility: (onData, opts) => load("sp12table", getAbility, onData, opts),

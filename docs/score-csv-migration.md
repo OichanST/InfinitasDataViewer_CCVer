@@ -54,6 +54,20 @@ PC 側のアップロードスクリプトの改修は [upload-script-spec.md](u
    - 起動のしかた（ダウンロードフォルダを監視して自動 / 手で実行）は未定
    - 履歴の曲名は CSV の表記のままでもビューア側（historySessions）で合わせる。ランプの `FULLCOMBO CLEAR` も読み替える
 
+## 楽曲データも GAS からやめた（2026-11-19）
+
+- 改造した Reflux（`C:\Reflux-1.16.6\Reflux`、Program.cs）が radar.tsv と一緒に `music.tsv` を書き出す。列は id, title, artist, genre, folder（バージョン番号）, label（パック ID）,
+  譜面ごとに `<SPB…DPL> level / notes / bpm / hell`。家の PC の `upload_radar.py` が、先頭に `# <ゲームのバージョン>` を付けてドライブの `INFINITAS履歴/music.tsv` に置く
+- ビューアは model.js の `parseMusicTsv` で GAS の頃と同じ形にする。バージョン番号は FOLDERS の並び（0 = 1st style … 33 = Sparkle Shower）、80 = INFINITAS。BEGINNER は出さない（ユーザー指定）
+- GAS の楽曲データと全曲突き合わせた結果：曲名は全部一致。違いは全部ゲーム側が正しいと判断した
+  - バージョン 13 曲（GRADIUSIC CYBER・GAMBOL・22DUNK は 1st style、See You Again・T.R.O.L.L.・The Onlyonez は EPOLIS など）、BPM 53 譜面、アーティスト・ジャンルの表記（全角 ＴЁЯＲＡ、GAS 側に `&Agrave;` が残っていた等）
+  - VIBRΛ SPA のノーツ数（GAS は 1483 = ST-R の EX スコアが入っていた。正しくは 941）、Only for now DPL は今回の更新で ☆11
+  - 新しい LEGGENDARIA 20 譜面と、来月追加の2曲（IIDX RED Ending (Ryu☆Remix)、Seven Times Four。スコア CSV に無いので「未解禁」で出す。ユーザー了承）が増えた
+- **HELL の札**：ゲームの曲データの 0x3F0 + 譜面×4 の bit1。wiki 由来の HCN/HBSS 301 譜面と誤差 0 で一致した。CN/BSS のデータ（wiki から補っていた）は要らなくなった
+- パック（packages / pkgAssign）は画面で使っていないので対応表は作らなかった
+- 2026-11-19 の INFINITAS 更新（P2D:J:B:A:2026111100）で Reflux のオフセットがずれた。songList / unlockdata / datamap は探し直した（約 +0x1060〜0x1090）。
+  プレイ中のデータ（playSettings / playData / currentsong / judgeData）は実際のプレイが要るので古いまま。Reflux は `exitafteroutput = true`（config.ini）で書き出したら終了するので影響しない
+
 ## やりたいこと（まだ手を付けていない）
 
 - ~~**ノーツレーダーのデータを GAS から Google ドライブに移す**~~ → **2026-11-19 にできた**。

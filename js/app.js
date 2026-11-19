@@ -533,7 +533,7 @@
 
 	const RADAR_SHORT = { NOTES: "NOTES", PEAK: "PEAK", SCRATCH: "SCRATCH", "SOF-LAN": "SOF-LAN", CHARGE: "CHARGE", CHORD: "CHORD" };
 	/** ゲームのノーツレーダーと同じく、HCN・HBSS のどちらかがあれば CHARGE の下に「HELL」と出す */
-	const hellOf = (c) => ({ CHARGE: c.cn === "HCN" || c.bss === "HBSS" });
+	const hellOf = (c) => ({ CHARGE: c.hell });
 	/** 一番大きい項目（ゲームと同じく項目名の前に★を付け、その項目の色で表示する） */
 	// ゲームの選曲画面のノーツレーダーの文字色（録画 Replay 2026-10-14 12-20-48.mp4 から測定）
 	const RADAR_COLOR = { NOTES: "#f6668c", PEAK: "#ec8662", SCRATCH: "#e05a62", "SOF-LAN": "#6a9fd8", CHARGE: "#7d5fe4", CHORD: "#abe583" };

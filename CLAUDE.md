@@ -10,7 +10,8 @@
 
 - スコア：Google ドライブ `INFINITAS履歴/<DJ名>/latest.csv`（e-amusement のスコア CSV）。GAS のプレイリザルトは使わない
 - 動画：YouTube Data API で `@oichan_ST` のアップロード動画（ST は正規、ST-R は RANDOM）
-- 楽曲データ：GAS（Inf_GoogleSpreadSheet と同じ Web API）
+- 楽曲データ：ドライブの `INFINITAS履歴/music.tsv`（改造 Reflux が書き出す。2026-11-19 から。GAS はもう使わない）。
+  新曲が来たら家の PC で Reflux を起動 → `python F:\node\MusicCenterFetchGenre\upload_radar.py`（music.tsv と radar.tsv をドライブに置く）
 - 地力表：このリポジトリの `data/iidx_sp12_table_edited.csv` を直接読む（2026-11-19 から。直したらコミット・プッシュするだけ）
 - ノーツレーダー：ドライブの `INFINITAS履歴/radar.tsv`（Reflux の radar.tsv をそのまま。2026-11-19 から）
 - 更新履歴：ドライブの `history.json`（PC 側のスクリプトが書く）

@@ -6,7 +6,10 @@ beatmania IIDX INFINITAS のプレイリザルト（クリアランプ・EXス�
   Google ドライブの公開フォルダ `INFINITAS履歴/<DJ名>/latest.csv`（今のスコア）を Drive API（API キー）で読む。
   `snapshots/` に日時の名前（`2026-11-17_2143.csv`）で置く CSV は履歴用の控えで、ビューアは読まない。
   CSV にある曲の未プレイ譜面は NO PLAY、CSV に無い曲（未購入パックなど）は未解禁として扱う。今は SP だけ。
-- **楽曲データ**（レベル・ノーツ数・BPM）は、[Inf_GoogleSpreadSheet](https://github.com/OichanST/Inf_GoogleSpreadSheet) と同じ Google Apps Script の Web API から**読むだけ**。
+- **楽曲データ**（曲名・アーティスト・ジャンル・バージョン・譜面ごとのレベル・ノーツ数・BPM・HELL）は、改造した Reflux がゲームのメモリから書き出す `music.tsv` を
+  ドライブの公開フォルダ `INFINITAS履歴/music.tsv` に置いたものを Drive API で読む（2026-11-19 に GAS から移した。BEGINNER は出さない）。
+  HELL（HCN か HBSS がある譜面。ゲームのノーツレーダーの札）もゲームの曲データの印（0x3F0 + 譜面×4 の bit1）から取る。
+  これでビューアは GAS（Google スプレッドシート）を一切使わない。
 - **地力表**（SP☆12）は、このリポジトリの [data/iidx_sp12_table_edited.csv](data/iidx_sp12_table_edited.csv) を直接読む（2026-11-19 に GAS から移した。書き方は [data/README.md](data/README.md)）。
 - **ノーツレーダー**は、Reflux が書き出す `radar.tsv` をドライブの公開フォルダ `INFINITAS履歴/radar.tsv` に置いたものを Drive API で読む（2026-11-19 に GAS から移した）。
 - **動画**は YouTube Data API で `@oichan_ST` のアップロード動画を読み、タイトル（`[12]Dahlia(RANDOM/HARD)` など）から譜面に割り当てる（ST は正規、ST-R は RANDOM の動画）。1譜面に何本でも付き、曲の詳細に全部出る。
