@@ -449,7 +449,7 @@
 			<td class="abcTier"><span class="tag tier-${tierClass(tier)}">${head}${esc(tier)}</span></td>
 			<td class="abcLamp">${lampHtml(c.lamp)}</td>
 			<td class="num">${c.miss == null ? "-" : c.miss}</td>
-			<td class="abcPlay">${c.plays ? `${c.plays}<small>回</small><span class="muted">${esc(playDay(c.lastPlay))}</span>` : "-"}</td>
+			<td class="abcPlay">${c.plays ? `<span class="abcN">${c.plays}</span><small>回</small><span class="muted">${esc(playDay(c.lastPlay))}</span>` : "-"}</td>
 		</tr>`).join("");
 		const more = list.length > n ? `<button type="button" class="abcMore">もっと見る（残り ${list.length - n}）</button>` : "";
 		return `<section class="abCand"><div class="prRecHead">次に狙う <span class="muted">（${esc(goal)} 未達成の譜面を、${head}地力の低い順・同じランクは MISS COUNT の少ない順に）</span></div>
