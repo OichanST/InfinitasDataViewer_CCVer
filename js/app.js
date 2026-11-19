@@ -441,15 +441,19 @@
 	function abCandHtml(list, mode, goal) {
 		const n = state.abCandN || 10;
 		const head = mode === "hard" ? "H" : "N";
+		// 最終プレー日（今年なら「11/17」、去年以前は「2025/7/22」）
+		const thisYear = String(new Date().getFullYear());
+		const playDay = (s) => (!s ? "" : s.startsWith(thisYear) ? csvTime(s).split(" ")[0] : s.slice(0, 10).replace(/-0?/g, "/"));
 		const rows = list.slice(0, n).map(({ c, tier }) => `<tr data-id="${esc(c.id)}">
 			<td class="prTitle"><span class="lvb" style="--dc:var(--d-${c.diff})">${c.level}<small>${esc(c.key)}</small></span>${esc(c.title)}</td>
 			<td class="abcTier"><span class="tag tier-${tierClass(tier)}">${head}${esc(tier)}</span></td>
 			<td class="abcLamp">${lampHtml(c.lamp)}</td>
 			<td class="num">${c.miss == null ? "-" : c.miss}</td>
+			<td class="abcPlay">${c.plays ? `${c.plays}<small>回</small><span class="muted">${esc(playDay(c.lastPlay))}</span>` : "-"}</td>
 		</tr>`).join("");
 		const more = list.length > n ? `<button type="button" class="abcMore">もっと見る（残り ${list.length - n}）</button>` : "";
 		return `<section class="abCand"><div class="prRecHead">次に狙う <span class="muted">（${esc(goal)} 未達成の譜面を、${head}地力の低い順・同じランクは MISS COUNT の少ない順に）</span></div>
-			${list.length ? `<table class="prTable abcTable"><thead><tr><th>譜面</th><th>${head}地力</th><th>ランプ</th><th>MISS COUNT</th></tr></thead><tbody>${rows}</tbody></table>${more}`
+			${list.length ? `<table class="prTable abcTable"><thead><tr><th>譜面</th><th>${head}地力</th><th>ランプ</th><th>MISS COUNT</th><th>PLAY</th></tr></thead><tbody>${rows}</tbody></table>${more}`
 				: `<p class="muted hNone">遊んだ譜面で ${esc(goal)} 未達成のものはありません</p>`}
 		</section>`;
 	}

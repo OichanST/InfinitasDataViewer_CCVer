@@ -188,6 +188,10 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .abcTable .abcTier .tag { margin-left: 0; font-size: 11px; padding: 0 5px; }
 /* PC: 地力タグの枠の幅をそろえる（いちばん長い「N個人差S+」に合わせる） */
 @media (min-width: 641px) { .abcTable .abcTier .tag { display: inline-block; min-width: 6.4em; text-align: center; box-sizing: border-box; } }
+/* PLAY 列（プレー回数と最終プレー日。2026-11-19。判断材料として添えるだけで、並び順には使わない） */
+.abcTable .abcPlay { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.abcTable .abcPlay small { font-size: 10px; color: var(--muted); margin-left: 1px; }
+.abcTable .abcPlay .muted { font-size: 11px; margin-left: 8px; display: inline-block; min-width: 5.2em; text-align: left; }
 .abcMore { display: block; width: 100%; margin-top: 6px; padding: 4px; font-size: 12px; color: var(--muted); background: transparent; border: 1px dashed var(--line); border-radius: 6px; cursor: pointer; }
 .abcMore:hover { color: var(--text); border-color: var(--muted); }
 /* スマホ: 上に曲名、下に地力・ランプ・MISS COUNT */
@@ -197,6 +201,7 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
   .abcTable td { border-top: 0; padding: 0; }
   .abcTable .prTitle { grid-column: 1 / -1; max-width: none; width: auto; margin-bottom: 2px; }
   .abcTable td.num::before { content: "MISS "; color: var(--muted); font-size: 10px; }
+  .abcTable .abcPlay { display: none; } /* スマホはあとで実機で調整（今は今までどおり出さない） */
 }
 #abTotal b { font: 16px var(--num); color: var(--text); }
 .abGroup { margin-top: 14px; }
