@@ -354,6 +354,9 @@ dialog { background: var(--panel); color: var(--text); border: 1px solid var(--l
 /* 詳細は表に動画の列があるので少し広め */
 #detail { width: min(860px, calc(100% - 24px)); }
 .dvideo { margin-top: 14px; }
+/* 今のランプの動画がまだ無いときの小さな知らせ（PC だけ。スマホは出さない） */
+.dvNote { margin-left: 10px; padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; font-size: 10px; letter-spacing: 0; color: var(--muted); }
+@media (max-width: 640px) { .dvNote { display: none; } }
 /* 1行1本。列（▶ / ランプ / 日時）をそろえる。ランプの列は出ている中でいちばん長いランプの幅（PC は正式名、スマホは略記） */
 .dvLinks { display: grid; grid-template-columns: max-content max-content 1fr; border-top: 1px solid var(--line); }
 .dvLinks .mv { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: 1em; padding: 5px 2px; border-bottom: 1px solid var(--line); white-space: nowrap; }

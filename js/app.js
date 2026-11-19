@@ -734,7 +734,10 @@
 			const lamp = `<span class="dvLamp" style="color:var(--lt-${cssKey(v.lamp)}, var(--l-${cssKey(v.lamp)}))"><span class="lampFull">${esc(v.lamp)}</span><span class="lampShort">${esc(M.LAMP_SHORT[v.lamp] || v.lamp)}</span></span>`;
 			return `<a class="mv" href="${esc(v.url)}" target="_blank" rel="noopener" title="${esc(v.title)}"><span>▶</span>${lamp}<span class="muted num">${date}</span></a>`;
 		}).join("");
-		return `<div class="dvideo"><div class="radarCaption muted">VIDEO</div><div class="dvLinks">${links}</div></div>`;
+		// 今のランプが動画のどれよりも上なら、見出しの横に小さく知らせる（撮り直しの目安。PC だけ。2026-11-19 試作）
+		const best = Math.max(...c.videos.map((v) => M.LAMPS.indexOf(v.lamp)));
+		const note = c.played && c.lampIdx > best ? `<span class="dvNote">${esc(c.lamp)} の動画なし</span>` : "";
+		return `<div class="dvideo"><div class="radarCaption muted">VIDEO${note}</div><div class="dvLinks">${links}</div></div>`;
 	}
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
