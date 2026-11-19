@@ -320,6 +320,10 @@
 			$("#histBody").innerHTML = `<p class="empty">まだ履歴がありません。INFINITAS を終了してアップロードされると、ここに出ます。</p>`;
 			return;
 		}
+		// 各回は見出し（日付・ランプ更新・スコア更新）だけを出し、押すと曲が開く（2026-11-19。PC だけ。スマホは最初から開いておく）。
+		// 開いている回は state.hsOpen（回の at）で覚え、SP/DP の切り替えなどで描き直しても閉じない
+		const mobile = window.matchMedia("(max-width: 640px)").matches;
+		state.hsOpen = state.hsOpen || new Set();
 		$("#histBody").innerHTML = histChartHtml(sessions, f.style) + sessions.map((s) => {
 			const when = `<span class="num">${dateText(s.at)}</span>`;
 			if (s.baseline) {
@@ -329,11 +333,15 @@
 			const lampN = list.filter((x) => x.lampUp).length;
 			const exN = list.filter((x) => x.exDiff > 0).length;
 			const rows = list.map((x) => `<tr${x.c ? ` data-id="${esc(x.id)}"` : ""}>${chartCell(x)}${changeCells(x)}</tr>`).join("");
-			return `<section class="hSession" data-day="${dayKey(s.at)}"><h3>${when}<span>ランプ更新 <b class="num">${lampN}</b></span><span>スコア更新 <b class="num">${exN}</b></span></h3>
+			const open = mobile || state.hsOpen.has(s.at) ? " open" : "";
+			return `<details class="hSession" data-day="${dayKey(s.at)}" data-at="${esc(s.at)}"${open}><summary><h3>${when}<span>ランプ更新 <b class="num">${lampN}</b></span><span>スコア更新 <b class="num">${exN}</b></span></h3></summary>
 				${list.length ? `<div style="overflow-x:auto"><table class="prTable hTable"><thead><tr><th>譜面</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows}</tbody></table></div>`
 					: `<p class="muted hNone">${f.style} の変化はありません</p>`}
-			</section>`;
+			</details>`;
 		}).join("");
+		for (const d of $("#histBody").querySelectorAll("details.hSession")) {
+			d.addEventListener("toggle", () => { if (!mobile) state.hsOpen[d.open ? "add" : "delete"](d.dataset.at); });
+		}
 		const sc = $("#histBody .hcScroll");
 		if (sc) sc.scrollLeft = sc.scrollWidth; // 新しい日（右端）を見せる
 	}
@@ -855,10 +863,10 @@ ${rv}
 		$("#histStyleSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { f().style = b.dataset.v; apply(); } });
 		$("#histBody").addEventListener("click", (e) => {
 			const tr = e.target.closest("tr[data-id]"); if (tr) { openDetail(tr.dataset.id); return; }
-			// グラフの棒を押すと、その日の回（新しい順なのでその日の最後の回）までスクロール
+			// グラフの棒を押すと、その日の回（新しい順なのでその日の最後の回）を開いてスクロール
 			const col = e.target.closest(".hcCol");
 			const sec = col && document.querySelector(`#histBody .hSession[data-day="${col.dataset.day}"]`);
-			if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+			if (sec) { if (sec.tagName === "DETAILS") sec.open = true; sec.scrollIntoView({ behavior: "smooth", block: "start" }); }
 		});
 		// グラフのツールチップ（その日の日付と件数）
 		$("#histBody").addEventListener("mousemove", (e) => {

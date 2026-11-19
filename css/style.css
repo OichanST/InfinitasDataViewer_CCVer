@@ -138,6 +138,16 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .hSession h3 { margin: 0 0 4px; font-size: 12px; font-weight: normal; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; }
 .hSession h3 > .num { font-size: 16px; color: var(--text); }
 .hSession h3 b { font: 14px var(--num); color: var(--text); }
+/* 各回の開閉（2026-11-19）。見出しを押すと曲が開く。PC は ▸ / ▾ を日付の前に出す。スマホは最初から開いていて印も出さない（今までの見た目のまま） */
+.hSession > summary { list-style: none; cursor: pointer; }
+.hSession > summary::-webkit-details-marker { display: none; }
+details.hSession:not([open]) h3 { margin-bottom: 0; }
+@media (min-width: 641px) {
+  details.hSession > summary h3::before { content: "▸"; color: var(--muted); font-size: 11px; width: 10px; }
+  details.hSession[open] > summary h3::before { content: "▾"; }
+  details.hSession > summary:hover h3 > .num { color: var(--accent); }
+}
+@media (max-width: 640px) { .hSession > summary { cursor: default; pointer-events: none; } }
 .hTable { min-width: 560px; }
 .hTable th:first-child, .hTable th:nth-child(2) { text-align: left; }
 .hTable .hLamp { text-align: left; }
