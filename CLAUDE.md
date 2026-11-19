@@ -10,7 +10,8 @@
 
 - スコア：Google ドライブ `INFINITAS履歴/<DJ名>/latest.csv`（e-amusement のスコア CSV）。GAS のプレイリザルトは使わない
 - 動画：YouTube Data API で `@oichan_ST` のアップロード動画（ST は正規、ST-R は RANDOM）
-- 楽曲データ・地力表：GAS（Inf_GoogleSpreadSheet と同じ Web API）
+- 楽曲データ：GAS（Inf_GoogleSpreadSheet と同じ Web API）
+- 地力表：このリポジトリの `data/iidx_sp12_table_edited.csv` を直接読む（2026-11-19 から。直したらコミット・プッシュするだけ）
 - ノーツレーダー：ドライブの `INFINITAS履歴/radar.tsv`（Reflux の radar.tsv をそのまま。2026-11-19 から）
 - 更新履歴：ドライブの `history.json`（PC 側のスクリプトが書く）
 

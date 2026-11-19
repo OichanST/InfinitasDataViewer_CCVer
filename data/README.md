@@ -7,13 +7,9 @@
 
 ## ビューアへの反映
 
-ビューアは Google スプレッドシートの AbilitySheet を読みます。修正版を編集したら、次を実行してシートに送ってください。
-
-```
-python F:\node\MusicCenterFetchGenre\upload_ability.py
-```
-
-その後、ビューアの ↻ ボタンで最新データを読み込むと反映されます。
+ビューアはこのフォルダの `iidx_sp12_table_edited.csv` を直接読みます（2026-11-19 から。それまでは GAS 経由で Google スプレッドシートの AbilitySheet に送っていた）。
+修正版を編集したら、コミットして main にプッシュするだけで、GitHub Pages に反映されたあとのビューアに出ます（↻ ボタンで読み直し）。
+`upload_ability.py` で送る手順は要らなくなりました。
 
 ## 書き方
 

@@ -8,7 +8,7 @@
  *     INFINITAS履歴/radar.tsv（ノーツレーダー。Reflux が書き出す radar.tsv をそのまま置く。2026-11-19 に GAS から移した）
  * - 楽曲データなどは Google SpreadSheet（Apps Script の Web API。Inf_GoogleSpreadSheet と同じもの、読み取りだけ）
  *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
- *     ?type=getAbilityData         地力表
+ * - 地力表（SP☆12）はこのリポジトリの data/iidx_sp12_table_edited.csv を直接読む（2026-11-19 に GAS から移した）
  *   GAS のプレイリザルト（getPlayResult）は使わない（スコアは CSV、MV は YouTube）
  * - MV（プレー動画）は YouTube Data API（API キー）でチャンネルのアップロード動画の一覧を読み、タイトルから譜面に割り当てる（model.js の videoMap）
  * - 取得したデータは IndexedDB に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く（設定だけ localStorage）
@@ -126,6 +126,51 @@ IV.api = (() => {
 		return { list, _mt: file.modifiedTime };
 	}
 
+	/** 引用符（"…"、"" はエスケープ）に対応した CSV の読み取り。行の配列（各行は列の配列） */
+	function parseCsv(text) {
+		const rows = [];
+		let row = [], cell = "", quoted = false;
+		text = text.replace(/^﻿/, "");
+		for (let i = 0; i < text.length; i++) {
+			const ch = text[i];
+			if (quoted) {
+				if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+				else if (ch === '"') quoted = false;
+				else cell += ch;
+			} else if (ch === '"') quoted = true;
+			else if (ch === ",") { row.push(cell); cell = ""; }
+			else if (ch === "\n" || ch === "\r") {
+				if (ch === "\r" && text[i + 1] === "\n") i++;
+				row.push(cell); rows.push(row); row = []; cell = "";
+			} else cell += ch;
+		}
+		if (cell || row.length) { row.push(cell); rows.push(row); }
+		return rows.filter((r) => r.some((c) => c.trim()));
+	}
+
+	/**
+	 * 地力表（SP☆12）。このリポジトリの data/iidx_sp12_table_edited.csv（修正版）を読み、GAS の getAbilityData と同じ形
+	 * [{ TITLE, TYPE, NOMAGE_TIER, HARD_TIER, VER, BPM, NOTES, TENDENCY, ATTRIBUTE, CPI_EC, CPI_CL }]（値は文字列）にする。
+	 * 曲名の末尾 (L) は LEGGENDARIA、(H) は HYPER、無ければ ANOTHER（upload_ability.py と同じ）。2026-11-19 に GAS から移した。
+	 * file:// で開いたときはローカルのファイルを読めないので、GitHub Pages のものを読む
+	 */
+	async function getAbility() {
+		const path = "data/iidx_sp12_table_edited.csv";
+		const url = /^https?:$/.test(location.protocol) ? path : "https://oichanst.github.io/InfinitasDataViewer_CCVer/" + path;
+		const res = await fetch(url, { cache: "no-cache" });
+		if (!res.ok) throw new Error(`地力表の取得に失敗しました（HTTP ${res.status}）`);
+		const [head, ...rows] = parseCsv(await res.text());
+		const col = (name) => head.indexOf(name);
+		const fields = { NOMAGE_TIER: "ノマゲ帯", HARD_TIER: "ハード帯", VER: "ver", BPM: "BPM", NOTES: "ノーツ数", TENDENCY: "譜面傾向", ATTRIBUTE: "属性", CPI_EC: "適正CPI_EC", CPI_CL: "適正CPI_CL" };
+		return rows.map((c) => {
+			const raw = c[col("曲名")] || "";
+			const m = raw.match(/\((L|H)\)\s*$/);
+			const r = { TITLE: raw.replace(/\((L|H)\)\s*$/, "").trim(), TYPE: m ? "SP" + m[1] : "SPA" };
+			for (const [k, h] of Object.entries(fields)) r[k] = c[col(h)] ?? "";
+			return r;
+		});
+	}
+
 	async function get(params) {
 		const url = ENDPOINT + "?" + new URLSearchParams(params).toString();
 		const res = await fetch(url, { redirect: "follow" });
@@ -207,7 +252,8 @@ IV.api = (() => {
 	//   result:<DJ名> … GAS のプレイリザルト（1人約1.4MB。スコアは CSV、動画は YouTube になった）
 	//   csv:<DJ名>    … ブラウザで読み込んだスコア CSV（CSV ボタンを消した）
 	//   radar         … GAS のノーツレーダー（2026-11-19 からドライブの radar.tsv。キーは driveradar）
-	idb.removePrefixed(["result:", "csv:", "radar"]);
+	//   ability       … GAS の地力表（2026-11-19 からリポジトリの data/iidx_sp12_table_edited.csv。キーは sp12table）
+	idb.removePrefixed(["result:", "csv:", "radar", "ability"]);
 
 	// 以前 localStorage に置いていたデータのキャッシュを消して場所を空ける（設定 pref: は残す）
 	try {
@@ -232,7 +278,7 @@ IV.api = (() => {
 		loadMusic: (onData, opts) => load("music", { type: "getMusicData" }, onData, opts),
 		/** onData には GAS の頃と同じ配列を渡す */
 		loadRadar: (onData, opts) => load("driveradar", getRadar, (d, info) => onData(d.list, info), opts),
-		loadAbility: (onData, opts) => load("ability", { type: "getAbilityData" }, onData, opts),
+		loadAbility: (onData, opts) => load("sp12table", getAbility, onData, opts),
 		loadHistory: (id, onData, opts) => load("history:" + id, () => getHistory(id), onData, opts),
 		loadDriveCsv: (id, onData, opts) => load("drivecsv:" + id, () => getDriveCsv(id), onData, opts),
 		/** YouTube のアップロード動画。↻（force）のときは全部取り直す */
