@@ -31,6 +31,7 @@
   大文字小文字だけ違う別曲（`SHOOTING STAR` / `Shooting Star`、`ACT` / `ACTØ` など）があるので、強い正規化は一意のときだけ使う
 - ランプ・EX・MISS は以下を除いて全部一致
   - Metagame Matador / The setting sun(burst) / レインボウ・フレーバー の3曲は、**スプレッドシート側で値が3曲の間でずれていた**（CSV が正しい）
+    → 2026-11-19 追記：ずれていたのは CSV の方だった。e-amusement の CSV はダウンロードによってこの3曲の中身が入れ替わる（upload-script-spec.md の「できたもの」）
   - CSV では FAILED（0点）、GAS では NO PLAY の譜面が少しある（Golden Palms N、ECHIDNA A）
 - CSV にはプレー回数・最終プレー日時・最終スコア更新時刻がある（ビューアの詳細の PLAY 列、並べ替えに使用）
 
@@ -45,7 +46,8 @@
 
 PC 側のアップロードスクリプトの改修は [upload-script-spec.md](upload-script-spec.md) にまとめた（家の PC でそれを読んで作業する）。
 
-1. **PC 側のスクリプト**（save_history.py の CSV 版）：ダウンロードした CSV を前回（latest.json）と比べて history.json に書き足し、CSV・latest.json・history.json をドライブに上げる。
+1. ~~**PC 側のスクリプト**~~ → **2026-11-19 にできた**（INFINITAS 終了で自動。中身は upload-script-spec.md の「できたもの」）。以下は当時のメモ
+   **PC 側のスクリプト**（save_history.py の CSV 版）：ダウンロードした CSV を前回（latest.json）と比べて history.json に書き足し、CSV・latest.json・history.json をドライブに上げる。
    アップロードの認証は今の `upload_on_exit.ps1` / `save_history.py` と同じやり方にそろえる（どちらも家の PC にある。このリポジトリには無い）。
    - CSV への切り替え時は、tracker と CSV で曲名・値が違うので、そのまま比べず「記録開始（baseline）」を入れ直す
    - CSV の「最終スコア更新時刻」を使えば、まとめてダウンロードしても変化を実際の日付に振り分けられる（ランプだけの更新でこの時刻が変わるかは未確認）

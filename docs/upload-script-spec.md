@@ -3,6 +3,33 @@
 家の PC の `upload_on_exit.ps1` / `save_history.py`（このリポジトリには無い）を、e-amusement のスコア CSV を元にした形に直すための仕様。
 ビューア側（このリポジトリ）は対応済み（2026-11-18）。経緯は [score-csv-migration.md](score-csv-migration.md)。
 
+## できたもの（2026-11-19、家の PC）
+
+INFINITAS を終了すると、自動で CSV を取って履歴まで更新する。
+
+1. `D:\beatmaniaIIDXINFINITAS\upload_on_exit.ps1`（作り直し。元は `.bak_20261119`）が INFINITAS の終了を待ち、
+   Chrome で `https://p.eagate.573.jp/game/infinitas/2/djdata/score_download.html&play_style=0#autodl` を開く。
+   INFINITAS の起動で e-amusement にログインしているので、そのログイン状態がそのまま使える
+2. Chrome の Tampermonkey に入れたユーザースクリプト（`D:\beatmaniaIIDXINFINITAS\infinitas_score_autodl.user.js`）が、
+   URL に `#autodl` が付いているときだけ、ページのテキストエリア（`score_data`）の中身に BOM を付けて
+   `C-xxxx-xxxx-xxxx_sp_score.csv` としてダウンロードフォルダに保存し、タブを閉じる。手で開いたときは何もしない。
+   （このページは SP を選んだ時点で CSV の全文がテキストエリアに入っている。「ダウンロード」ボタンはそれをファイルにしているだけ）
+3. CSV が届いたら（最大5分待つ）`F:\node\MusicCenterFetchGenre\save_history_csv.py` に渡し、終わったら CSV を消す。結果は `upload_on_exit.log`
+
+- **Reflux は毎回の起動では立ち上げない**（`inf_launch_ext.ps1` から外した）。GAS へのアップロード（upload_tracker.py）と tracker.tsv からの履歴（save_history.py）もやめた。
+  新曲のノーツレーダーを取るときだけ手で Reflux を起動する
+- **DJ 名は CSV のファイル名の INFINITAS ID から決める**（save_history_csv.py の `DJ_BY_ID`。ST-R = C-6368-8506-0880、ST = C-2255-8466-5544）
+- **セッションの時刻**：変化ごとに、その譜面の「最終プレー日時」の日付の回に入れる。回の `at` はその日の変化のうちいちばん遅い最終プレー日時。同じ日の回があればまとめる。
+  「最終スコア更新時刻」は EX スコアが上がったときしか変わらない（ランプ・ミスだけの更新では変わらない）ので使わない。
+  取りそこねている間に同じ譜面を別の日にも遊ぶと、変化があとの日に入る（CSV に情報が無いので仕方ない）
+- **つなぎ目**：tracker の最後の状態（latest.json、2026-11-17 21:43）と 2026-11-19 の CSV は、曲名の表記ゆれ2曲（`ƒƒƒƒƒ`、`Light and Cyber･･･`）を除いて全譜面一致した。
+  baseline は入れ直さず、そのまま比べてつないだ（変化0件。これまでの履歴はそのまま）
+- **CSV の行の入れ替わり**：e-amusement の CSV は、ダウンロードによって Metagame Matador / The setting sun(burst) / レインボウ・フレーバー の
+  スコアの部分（4列目以降。曲名・アーティストは正しい位置のまま）が3曲の間でぐるぐる入れ替わる。11-18 に手で置いた latest.csv はずれていた（11-19 の CSV が正しい。ノーツ数で確認）。
+  save_history_csv.py は、前回の行とまったく同じ中身が別の曲に出ていたら入れ替わりとみなして前回の割り当てに戻し、直した中身で latest.csv を書く
+- `latest.json` は CSV 版の形 `{ "source": "csv", "charts": {"曲名|SPA": [ランプ, EX, MISS]}, "rows": {曲名: 4列目以降} }` に変わった（ビューアは読まない）
+- まだ確かめていないこと：e-amusement のログインが切れていたとき、ログインし直したあとに `#autodl` が残って自動で続くか
+
 ## 何を変えるか
 
 これまで：INFINITAS を終了 → `upload_on_exit.ps1` が Reflux の `tracker.tsv` をドライブに上げる → `save_history.py` が前回と比べて `history.json` に書き足す。
