@@ -4,10 +4,11 @@
  *
  * - スコア・更新履歴は Google ドライブの公開フォルダから Drive API（API キー）で読む
  *     INFINITAS履歴/<DJ名>/latest.csv（今のスコア。e-amusement のスコア CSV。自分とライバルのスコアはこれだけを使う）
- *     INFINITAS履歴/<DJ名>/history.json（PC の save_history.py がアップロードのたびに書き足す）
+ *     INFINITAS履歴/<DJ名>/history.json（PC の save_history_csv.py が INFINITAS 終了のたびに書き足す）
+ *     INFINITAS履歴/radar.tsv（ノーツレーダー。Reflux が書き出す radar.tsv をそのまま置く。2026-11-19 に GAS から移した）
  * - 楽曲データなどは Google SpreadSheet（Apps Script の Web API。Inf_GoogleSpreadSheet と同じもの、読み取りだけ）
  *     ?type=getMusicData           楽曲データ { version, musicList, customBPM, packages, pkgAssign }
- *     ?type=getRadarData / getAbilityData  ノーツレーダー / 地力表
+ *     ?type=getAbilityData         地力表
  *   GAS のプレイリザルト（getPlayResult）は使わない（スコアは CSV、MV は YouTube）
  * - MV（プレー動画）は YouTube Data API（API キー）でチャンネルのアップロード動画の一覧を読み、タイトルから譜面に割り当てる（model.js の videoMap）
  * - 取得したデータは IndexedDB に保存し、次回はまずキャッシュで表示してから裏で最新を取りに行く（設定だけ localStorage）
@@ -100,6 +101,31 @@ IV.api = (() => {
 		return { ...(await res.json()), _mt: file.modifiedTime };
 	}
 
+	/**
+	 * ノーツレーダー。ドライブの INFINITAS履歴/radar.tsv（Reflux の radar.tsv。列は id, title, difficulty, level, notes, peak, scratch, sof-lan, charge, chord）を
+	 * GAS の getRadarData と同じ形 { list: [{ TITLE, TYPE, NOTES, PEAK, SCRATCH, "SOF-LAN", CHARGE, CHORD }], _mt } にする。
+	 * 置いていなければ list は空。更新時刻がキャッシュと同じならダウンロードしない
+	 */
+	async function getRadar() {
+		const file = await driveFind(HISTORY_FOLDER, "radar.tsv");
+		if (!file) return { list: [] };
+		const cached = await idb.read("driveradar");
+		if (cached && cached.data && cached.data._mt === file.modifiedTime) return cached.data;
+		const res = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?` + new URLSearchParams({ alt: "media", key: DRIVE_KEY }));
+		if (!res.ok) throw new Error(`ノーツレーダーの取得に失敗しました（HTTP ${res.status}）`);
+		const lines = (await res.text()).replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
+		const head = lines[0].split("\t");
+		const col = (name) => head.indexOf(name);
+		const num = { NOTES: col("notes"), PEAK: col("peak"), SCRATCH: col("scratch"), "SOF-LAN": col("sof-lan"), CHARGE: col("charge"), CHORD: col("chord") };
+		const list = lines.slice(1).map((l) => {
+			const c = l.split("\t");
+			const r = { TITLE: c[col("title")], TYPE: c[col("difficulty")] };
+			for (const [k, i] of Object.entries(num)) r[k] = Number(c[i]);
+			return r;
+		});
+		return { list, _mt: file.modifiedTime };
+	}
+
 	async function get(params) {
 		const url = ENDPOINT + "?" + new URLSearchParams(params).toString();
 		const res = await fetch(url, { redirect: "follow" });
@@ -180,7 +206,8 @@ IV.api = (() => {
 	// もう使わない保存データを消して場所を空ける（2026-11-18〜）
 	//   result:<DJ名> … GAS のプレイリザルト（1人約1.4MB。スコアは CSV、動画は YouTube になった）
 	//   csv:<DJ名>    … ブラウザで読み込んだスコア CSV（CSV ボタンを消した）
-	idb.removePrefixed(["result:", "csv:"]);
+	//   radar         … GAS のノーツレーダー（2026-11-19 からドライブの radar.tsv。キーは driveradar）
+	idb.removePrefixed(["result:", "csv:", "radar"]);
 
 	// 以前 localStorage に置いていたデータのキャッシュを消して場所を空ける（設定 pref: は残す）
 	try {
@@ -203,7 +230,8 @@ IV.api = (() => {
 
 	return {
 		loadMusic: (onData, opts) => load("music", { type: "getMusicData" }, onData, opts),
-		loadRadar: (onData, opts) => load("radar", { type: "getRadarData" }, onData, opts),
+		/** onData には GAS の頃と同じ配列を渡す */
+		loadRadar: (onData, opts) => load("driveradar", getRadar, (d, info) => onData(d.list, info), opts),
 		loadAbility: (onData, opts) => load("ability", { type: "getAbilityData" }, onData, opts),
 		loadHistory: (id, onData, opts) => load("history:" + id, () => getHistory(id), onData, opts),
 		loadDriveCsv: (id, onData, opts) => load("drivecsv:" + id, () => getDriveCsv(id), onData, opts),

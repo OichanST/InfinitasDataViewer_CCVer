@@ -56,9 +56,10 @@ PC 側のアップロードスクリプトの改修は [upload-script-spec.md](u
 
 ## やりたいこと（まだ手を付けていない）
 
-- **ノーツレーダーのデータを GAS から Google ドライブに移す**（2026-11-18 ユーザー要望。「GAS に持たせる必要はない」）。
-  今は GAS の `getRadarData`（api.js の `loadRadar`）で読んでいる。スコア CSV や history.json と同じく、ドライブの公開フォルダに JSON などで置いて Drive API で読む形にしたい。
-  置き場所・形式・誰が更新するか（今 GAS 側でどう作っているか）は Inf_GoogleSpreadSheet 側を見てから決める
+- ~~**ノーツレーダーのデータを GAS から Google ドライブに移す**~~ → **2026-11-19 にできた**。
+  Reflux が書き出す `radar.tsv` をそのままドライブの `INFINITAS履歴/radar.tsv` に置き（家の PC の `upload_radar.py` がコピーする。新曲が来たら手で Reflux を起動してから実行）、
+  ビューアは api.js の `getRadar` で読んで GAS の頃と同じ形 `[{ TITLE, TYPE, NOTES, PEAK, SCRATCH, "SOF-LAN", CHARGE, CHORD }]` にする。
+  移す前に GAS のデータと 11699 譜面すべて一致することを確かめた。GAS の `getRadarData` と NotesRadar シートはもう使わない
 - **地力表の「次に狙う」の調整**（2026-11-18。家の PC で案出ししてから）。
   今は「目標ランプ未達成（ノマゲ=CLEAR、ハード=HARD CLEAR）の譜面を、地力ランクの低い順・同じランクは MISS COUNT の少ない順」に機械的に並べているだけ。
   ランクが低くても苦手で今は狙わない譜面（例: Rampage は RANDOM だとラストがきつい）がある。案の一つとして「譜面ごとに保留にして候補から外す」
