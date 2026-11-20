@@ -66,8 +66,11 @@ body:has(#app[hidden]) .top .tabs { display: none; }
 /* 絞り込み */
 main { max-width: 1100px; margin: 0 auto; padding: 0 12px 60px; }
 .filters { position: sticky; top: 45px; z-index: 10; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
-/* PC は帯の端が見えるので、中のボタンが端にくっつかないよう左右にも余白を入れる（2026-11-20。スマホは帯が画面いっぱいなのでそのまま） */
+/* PC は帯の端が見えるので、中のボタンが端にくっつかないよう左右にも余白を入れる（2026-11-20） */
 @media (min-width: 641px) { .filters { padding-left: 12px; padding-right: 12px; } }
+/* スマホは main の左右の余白（12px）の分だけ帯を外へ広げて画面の端から端までにし、中の位置は同じ余白で保つ
+   （2026-11-21。帯の左右にすき間があり、スクロールした一覧が透けていた） */
+@media (max-width: 640px) { .filters, #viewTabs { margin-left: -12px; margin-right: -12px; padding-left: 12px; padding-right: 12px; } }
 .frow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .frow + .frow { margin-top: 8px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
