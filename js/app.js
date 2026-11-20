@@ -526,7 +526,7 @@
 			<div class="lv">${c.level}<small>${c.key}</small></div>
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
-				<div class="sub"><span class="num">BPM ${esc(c.bpm)}</span><span class="num">${c.notes} NOTES</span></div>
+				<div class="sub"><span class="num">${esc(c.bpm)} BPM</span><span class="num">${c.notes} NOTES</span></div>
 			</div>
 			<div class="rvCmp num">
 				<span class="rvWho">${esc(state.id)}</span>${me}
@@ -603,7 +603,7 @@
 			<div class="lv">${c.level}<small>${c.key}</small></div>
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
-				<div class="sub"><span class="num">BPM ${esc(c.bpm)}</span><span class="num">${c.notes} NOTES</span></div>
+				<div class="sub"><span class="num">${esc(c.bpm)} BPM</span><span class="num">${c.notes} NOTES</span></div>
 				${radarMiniHtml(c, abilityHtml(c))}
 			</div>
 			<div class="score">${score}</div>
@@ -793,10 +793,11 @@ ${rv}
 					${s.GENRE ? `<div class="dgenre">${esc(s.GENRE)}</div>` : ""}
 					<h2>${esc(s.TITLE)}</h2>
 					<div class="dinfo"><span>${esc(s.ARTIST)}</span></div>
+					<div class="dbpm"><b>${esc(c.bpm)}</b> BPM</div>
 				</div>
 				<div class="dchart" style="--dc:var(--d-${c.diff})">
 					<div class="dchartName">${c.style} ${M.DIFF_NAMES[c.diff]} <b>${c.level}</b></div>
-					<div class="dchartSub"><span><b>${c.notes}</b> NOTES</span><span>BPM <b>${esc(c.bpm)}</b></span></div>
+					<div class="dchartSub"><span><b>${c.notes}</b> NOTES</span></div>
 				</div>
 			</div>
 			<div class="dbody">
