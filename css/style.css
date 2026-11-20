@@ -30,6 +30,11 @@ button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
 .muted { color: var(--muted); }
+/* 背景に直接のっている灰色の文字（PC・スマホとも）。背景を明るい青にしたので、#8b93a7 ではコントラスト比が 2.0 しかない。
+   #d6deeb は背景（相対輝度 0.12 前後）に対して 4.5、一番明るい光の部分でも 3.9 程度。パネルの中の灰色の文字はそのまま（2026-11-20） */
+#abTotal, #rivalCtl .flabel, #rivalCtl .muted, #radarView .frow .flabel, #radarView .radarCaption, .sumhead .muted, .empty, .foot { color: #d6deeb; }
+/* スマホは一覧の上のタブも背景に直接のっている（PC はヘッダーの暗い帯の中なのでそのまま） */
+@media (max-width: 640px) { #viewTabs button:not([aria-selected="true"]) { color: #d6deeb; } }
 .hint { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
 .err { color: #ff8a80; min-height: 1.2em; margin: 6px 0 0; font-size: 13px; }
 .num, .lv, .ex, .grade { font-family: var(--num); letter-spacing: .02em; }
@@ -114,6 +119,14 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .pradar { padding: 10px 0; }
 .prCards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; margin-top: 8px; }
 .prCard { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+/* レーダータブのレーダーはパネルの枠に入れる（明るい背景の上では CHARGE などの項目名が見えないため。PC だけ。2026-11-20）。
+   下の欄（.prCards）と同じ並べ方の行に入れて 2 列目に置き、PEAK の欄と同じ幅・位置にそろえる（1 列のときは 1 列目）。レーダーは欄の幅に合わせて縮める */
+@media (min-width: 641px) {
+  .prRadarRow { container-type: inline-size; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
+  .prRadar { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 0; }
+  .prRadar svg { width: 100%; height: auto; }
+  @container (min-width: 690px) { .prRadar { grid-column: 2; } }
+}
 .prCard h3 { margin: 0 0 6px; font: 600 14px var(--num); letter-spacing: .06em; display: flex; justify-content: space-between; align-items: baseline; }
 .prCard h3 b { font-size: 20px; font-weight: normal; color: var(--text); }
 .prTable { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -296,7 +309,8 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .tag.radar-CHARGE { color: #7d5fe4; border: 1px solid #7d5fe4; }
 .tag.radar-CHORD { color: #abe583; border: 1px solid #abe583; }
 /* 6項目を同じ幅の列に並べ、曲が違っても各項目の位置がそろうようにする */
-.radarBox { display: inline-grid; grid-template-columns: repeat(6, 58px); gap: 2px 8px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 11px; width: fit-content; }
+.radarBox { display: inline-grid; grid-template-columns: repeat(6, 58px); gap: 2px 8px; padding: 3px 10px; border: 1px solid #64748f; border-radius: 6px; color: var(--muted); font-size: 11px; width: fit-content; }
+/* ↑ 枠線 #64748f はパネルの地（rgb(25,41,63)）に対してコントラスト比 3.1（--line の #2a3e6a は 1.4 で見えなかった。2026-11-20） */
 .radarBox .ri { display: flex; flex-direction: column; white-space: nowrap; line-height: 1.3; }
 .radarBox .rl { font-size: 9px; letter-spacing: .04em; }
 .radarBox .rv { color: var(--text); font-size: 12px; }

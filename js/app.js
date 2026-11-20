@@ -409,7 +409,7 @@
 				${f.recMode === "score" ? recScoreHtml(rec[k]) : recHtml(rec[k])}
 			</section>`;
 		}).join("");
-		$("#radarBody").innerHTML = radarSvg(vals, {}, "PLAYER NOTES RADAR", 1.4, false) + `<div class="prCards">${cards}</div>`;
+		$("#radarBody").innerHTML = `<div class="prRadarRow"><div class="prRadar">${radarSvg(vals, {}, "PLAYER NOTES RADAR", 1.4, false, undefined, window.matchMedia("(min-width: 641px)").matches ? 92 : 72)}</div></div>` + `<div class="prCards">${cards}</div>`;
 	}
 
 	// ---------- フォルダ ----------
@@ -674,11 +674,14 @@
 		return radarSvg(c.radar, hellOf(c), "NOTES RADAR", 1.3, true, `var(--d-${c.diff})`);
 	}
 	/** 六角形のレーダーチャート。r は { NOTES: 数値, … }、hell は { CHARGE: true } のような HELL 札の有無 */
-	function radarSvg(r, hell, caption, scale = 1, markTop = true, color = "var(--accent)") {
+	/** R を指定すると六角形をその半径で描き、枠（viewBox）を六角形と文字がちょうど収まる大きさに詰める（レーダータブの PC 用。2026-11-20） */
+	function radarSvg(r, hell, caption, scale = 1, markTop = true, color = "var(--accent)", R = 72) {
 		const vals = RADAR_FIELDS.map((f) => Number(r[f]) || 0);
 		const top = markTop ? radarTop(r) : "";
 		const max = Math.max(200, ...vals.map((v) => Math.ceil(v / 50) * 50));
-		const cx = 135, cy = 120, R = 72;
+		// 既定（R=72）は今までどおり 270×240。R を指定したときは左右に項目名・数値が入る分（約 50）だけ空ける
+		const W = R === 72 ? 270 : Math.round(2 * ((R + 16) * Math.cos(Math.PI / 6) + 50)), H = R === 72 ? 240 : Math.round(2 * (R + 16 + 12 + 9));
+		const cx = W / 2, cy = H / 2;
 		const angle = (i) => ((-90 + i * 60) * Math.PI) / 180;
 		const axisEnd = (i) => [cx + R * Math.cos(angle(i)), cy + R * Math.sin(angle(i))];
 		const dataPt = (i, v) => {
@@ -722,7 +725,7 @@
 		}).join("");
 		return `<div class="radarWrap">
 			<div class="radarCaption muted">${esc(caption)}</div>
-			<svg viewBox="0 0 270 240" width="${270 * scale}" height="${240 * scale}">
+			<svg viewBox="0 0 ${W} ${H}" width="${W * scale}" height="${H * scale}">
 				${rings}${axes}
 				<polygon points="${dataPts}" fill="${color}" fill-opacity="0.5" stroke="${color}" stroke-opacity="0.9" stroke-width="1" stroke-linejoin="round"/>
 				${labels}${valueLabels}
