@@ -388,10 +388,10 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 .dchartName { font-family: var(--num); color: var(--dc); font-size: 15px; letter-spacing: .04em; }
 .dchartName b { font-size: 22px; font-weight: normal; margin-left: 2px; }
 .dchartSub { color: var(--muted); font-size: 12px; display: flex; gap: 12px; justify-content: flex-end; }
-.dchartSub b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 14px; }
+.dchartSub b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 13px; }
 /* BPM はアーティストの下に（INFINITAS の選曲画面と同じく曲の情報として。PC だけ。2026-11-20）。スマホは今までどおり表の中に出す */
 .dbpm { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
-.dbpm b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 14px; }
+.dbpm b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 13px; }
 @media (min-width: 641px) { .dinfo:has(+ .dbpm) { margin-bottom: 2px; } }
 @media (max-width: 640px) { .dbpm { display: none; } }
 /* スマホは今までどおり表の中に譜面・NOTES・BPM を出す（曲名の右には出さない） */
