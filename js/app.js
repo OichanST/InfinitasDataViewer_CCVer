@@ -905,9 +905,17 @@
 			if (e.target.closest("a")) return;
 			const b = e.target.closest("[data-folder]");
 			if (b) {
-				f().fdOpen = f().fdOpen === b.dataset.folder ? "" : b.dataset.folder;
+				const name = b.dataset.folder, before = b.getBoundingClientRect().top;
+				f().fdOpen = f().fdOpen === name ? "" : name;
 				apply();
-				// 開いたフォルダの見出しが画面の上に来るように
+				// スマホ: 押した行はその場にとどめ、一覧はその下に開く（上の一覧が閉じて行がずれた分はスクロールで戻す）。
+				// 上へ持っていくと固定表示（約 300px）の下に隠れていた（2026-11-21）
+				if (window.matchMedia("(max-width: 640px)").matches) {
+					const now = [...document.querySelectorAll("#folderView [data-folder]")].find((x) => x.dataset.folder === name);
+					if (now) window.scrollBy(0, now.getBoundingClientRect().top - before);
+					return;
+				}
+				// PC: 開いたフォルダの見出しが画面の上に来るように
 				const row = f().fdOpen && [...document.querySelectorAll("#folderView [data-folder]")].find((x) => x.dataset.folder === f().fdOpen);
 				if (row) row.scrollIntoView({ block: "start" });
 				return;
