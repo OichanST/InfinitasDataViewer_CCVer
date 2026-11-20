@@ -89,6 +89,14 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .presets button { border: 1px solid var(--line); background: var(--panel2); border-radius: 6px; padding: 1px 8px; font-size: 12px; }
 .presets button[aria-pressed="true"] { border-color: var(--accent); }
 .link { background: none; border: 0; color: var(--accent); text-decoration: underline; padding: 0; }
+/* スマホ: LV のボタンを押しやすい大きさにして、SP/DP の横に入るだけ（ALL〜4）、残り（5〜12）を次の行に 8 個ちょうどで並べる。
+   譜面はその下の行（2026-11-20。12 だけが改行されていた）。ボタンの幅は行の幅の 1/8 なので、画面が狭くても同じ並びになる */
+@media (max-width: 640px) {
+  #filters > .frow:first-child { gap: 6px 4px; }
+  #filters > .frow:first-child > .flabel { margin: 0 2px 0 4px; }
+  #levelChips { display: contents; }
+  #levelChips .chip { width: calc((100% - 28px) / 8); min-width: 0; height: 40px; padding: 0; }
+}
 
 /* 一覧 / 地力表 の切り替え */
 .tabs { display: flex; gap: 4px; padding-top: 10px; border-bottom: 1px solid var(--line); }
