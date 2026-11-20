@@ -414,6 +414,7 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 .dright .dvideo, .dright .dhist, .dright .drival { margin-top: 18px; }
 /* 詳細の RIVAL 欄は PC だけ（スマホは今までどおり表の中にライバルの列を出す） */
 .drival .hLamp { text-align: left; }
+.drival .rvRes { text-align: center; }
 @media (max-width: 640px) { .drival { display: none; } }
 @media (max-width: 640px) {
   .dbody { display: block; }

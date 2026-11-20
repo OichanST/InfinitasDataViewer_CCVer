@@ -752,13 +752,15 @@
 		if (!state.rivals.length) return "";
 		const rows = c.rivals.map((r, i) => {
 			const name = `<td>${esc(state.rivals[i].id)}</td>`;
-			if (!r.played) return `<tr>${name}<td class="hLamp muted">-</td><td class="num">-</td><td class="num">-</td></tr>`;
+			if (!r.played) return `<tr>${name}<td class="rvRes">-</td><td class="hLamp muted">-</td><td class="num">-</td><td class="num">-</td></tr>`;
 			const cls = rivalCls(r);
-			const diff = r.diff != null ? `<span class="${cls}">${r.diff > 0 ? "+" : ""}${r.diff} <b>${RIVAL_RESULT[cls]}</b></span>` : "-";
-			return `<tr>${name}<td class="hLamp">${rivalLampHtml(r.lamp)}</td><td class="num">${r.ex}</td><td class="num">${diff}</td></tr>`;
+			const res = r.diff != null ? `<b class="${cls}">${RIVAL_RESULT[cls]}</b>` : "-";
+			// 差は「ライバル − 自分」で出す（r.diff は 自分 − ライバル）
+			const diff = r.diff != null ? `<span class="${cls}">${-r.diff > 0 ? "+" : ""}${-r.diff}</span>` : "-";
+			return `<tr>${name}<td class="rvRes">${res}</td><td class="hLamp">${rivalLampHtml(r.lamp)}</td><td class="num">${r.ex}</td><td class="num">${diff}</td></tr>`;
 		}).join("");
 		return `<div class="drival"><div class="radarCaption muted">RIVAL</div><div style="overflow-x:auto"><table class="dtable">
-			<thead><tr><th>ライバル</th><th class="hLamp">ランプ</th><th>EX SCORE</th><th>差</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+			<thead><tr><th>ライバル</th><th class="rvRes">WIN/LOSE</th><th class="hLamp">ランプ</th><th>EX SCORE</th><th>差</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 	}
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
@@ -771,7 +773,8 @@
 			const rv = x.rivals.map((r) => {
 				if (!r.played) return `<td class="num mOnly">-</td>`;
 				const cls = rivalCls(r);
-				const diff = r.diff != null ? ` <span class="${cls}">(${r.diff > 0 ? "+" : ""}${r.diff}) <b>${RIVAL_RESULT[cls]}</b></span>` : "";
+				// 差は「ライバル − 自分」で出す（r.diff は 自分 − ライバル。2026-11-20）
+				const diff = r.diff != null ? ` <span class="${cls}">(${-r.diff > 0 ? "+" : ""}${-r.diff}) <b>${RIVAL_RESULT[cls]}</b></span>` : "";
 				return `<td class="num mOnly">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
 			}).join("");
 			return `<tr class="${x.id === c.id ? "cur" : ""}" style="--dc:var(--d-${x.diff})">
