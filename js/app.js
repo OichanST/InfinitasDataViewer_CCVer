@@ -777,7 +777,7 @@
 				const diff = r.diff != null ? ` <span class="${cls}">(${-r.diff > 0 ? "+" : ""}${-r.diff}) <b>${RIVAL_RESULT[cls]}</b></span>` : "";
 				return `<td class="num mOnly">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
 			}).join("");
-			return `<tr class="${x.id === c.id ? "cur" : ""}" style="--dc:var(--d-${x.diff})">
+			return `<tr style="--dc:var(--d-${x.diff})">
 				<td class="lvcell mOnly">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
 				<td class="num mOnly">${x.notes}</td><td class="num mOnly">${esc(x.bpm)}</td>
 				<td class="dlamp" style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>

@@ -436,7 +436,6 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 .dtable th, .dtable td { border-bottom: 1px solid var(--line); padding: 6px; text-align: right; white-space: nowrap; }
 .dtable th:first-child, .dtable td:first-child { text-align: left; }
 .dtable th { color: var(--muted); font-weight: normal; font-size: 12px; }
-.dtable tr.cur td { background: var(--panel2); }
 .dtable .lvcell { font-family: var(--num); color: var(--dc); }
 #rivalList { list-style: none; padding: 0; margin: 0 0 8px; }
 #rivalList li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-family: var(--num); }
