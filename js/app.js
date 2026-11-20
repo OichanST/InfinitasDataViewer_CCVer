@@ -760,7 +760,7 @@
 			return `<tr>${name}<td class="rvRes">${res}</td><td class="hLamp">${rivalLampHtml(r.lamp)}</td><td class="num">${r.ex}</td><td class="num">${diff}</td></tr>`;
 		}).join("");
 		return `<div class="drival"><div class="radarCaption muted">RIVAL</div><div style="overflow-x:auto"><table class="dtable">
-			<thead><tr><th>ライバル</th><th class="rvRes">WIN/LOSE</th><th class="hLamp">ランプ</th><th>EX SCORE</th><th>差</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+			<thead><tr><th>DJ NAME</th><th class="rvRes">WIN/LOSE</th><th class="hLamp">ランプ</th><th>EX SCORE</th><th>差</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 	}
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
