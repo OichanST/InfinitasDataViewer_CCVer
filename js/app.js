@@ -242,12 +242,15 @@
 
 	// ---------- 更新履歴 ----------
 	const lampHtml = (l) => `<span style="color:var(--lt-${cssKey(l)}, var(--l-${cssKey(l)}))">${esc(l)}</span>`;
+	// 正式名と略称の両方を入れておき、CSS でどちらかを出す（スマホの詳細の HISTORY は略称。2026-11-20）
+	const lampFS = (l) => `<span class="lampFull">${esc(l)}</span><span class="lampShort">${esc(M.LAMP_SHORT[l] || l)}</span>`;
+	const lampHtmlFS = (l) => `<span style="color:var(--lt-${cssKey(l)}, var(--l-${cssKey(l)}))">${lampFS(l)}</span>`;
 	const signed = (n) => (n > 0 ? "+" : "") + n;
 	/** 1譜面ぶんの変化のセル（ランプ / DJ LEVEL / EX SCORE / MISS COUNT）。変わったところだけ「前 → 後」 */
 	function changeCells(x) {
 		const b = x.before, a = x.after;
 		// hTo（→ 後のランプ）と差分の括弧は、詳細画面（PC）で下の段に回せるよう別の要素にしておく
-		const lamp = !b || b.lamp !== a.lamp ? `${lampHtml(b ? b.lamp : "NO PLAY")} <span class="hTo"><span class="muted">→</span> ${lampHtml(a.lamp)}</span>` : `<span class="muted">${esc(a.lamp)}</span>`;
+		const lamp = !b || b.lamp !== a.lamp ? `${lampHtmlFS(b ? b.lamp : "NO PLAY")} <span class="hTo"><span class="muted">→</span> ${lampHtmlFS(a.lamp)}</span>` : `<span class="muted">${lampFS(a.lamp)}</span>`;
 		const g = (v) => v.grade ? `<span style="color:var(--g-${v.grade})">${v.grade}</span>` : "";
 		const grade = !a.grade ? "" : b && b.grade && b.grade !== a.grade ? `${g(b)} <span class="muted">→</span> ${g(a)}` : g(a);
 		const diff = (n, good) => `<span class="hDiff ${good ? "hUp" : "hDown"}"><span class="paren">(</span>${signed(n)}<span class="paren">)</span></span>`;
