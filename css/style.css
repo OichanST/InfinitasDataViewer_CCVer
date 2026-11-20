@@ -489,7 +489,12 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 @media (max-width: 640px) {
   .top h1 { font-size: 15px; } .top .sync { display: none; }
   .top { gap: 6px; padding: 8px 10px; }
-  .filters { top: 41px; }
+  /* タブもヘッダーの下に固定し、絞り込みの欄はその下に（2026-11-21。スクロールするとタブが消えていた）。タブの高さは 41px */
+  #viewTabs { position: sticky; top: 41px; z-index: 15; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); }
+  .filters { top: 82px; }
+  /* 詳細などのダイアログを開いている間は、後ろの画面をスクロールさせない（2026-11-21） */
+  html:has(dialog[open]) { overflow: hidden; }
+  dialog { overscroll-behavior: contain; }
   .item { grid-template-columns: 10px 30px minmax(0, 1fr) auto; gap: 0 8px; }
   .item .lv { font-size: 17px; }
   .item .title { font-size: 15px; }
