@@ -444,6 +444,8 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 @media (max-width: 640px) {
   .dbody { display: block; }
   .dright .dvideo, .dright .dhist, .dright .drival { margin-top: 14px; }
+  /* スマホは詳細が縦に長くなるので、レーダーを元の大きさ（270×240、1.3 倍の 351×312 から縮める）に（2026-11-20） */
+  .dleft .radarWrap svg { height: 240px; width: auto; }
 }
 @media (max-width: 640px) {
   .dchart { display: none; }
