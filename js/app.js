@@ -747,18 +747,32 @@
 		const note = c.played && c.lampIdx > best ? `<span class="dvNote">${esc(c.lamp)} の動画なし</span>` : "";
 		return `<div class="dvideo"><div class="radarCaption muted">VIDEO${note}</div><div class="dvLinks">${links}</div></div>`;
 	}
+	/** 詳細の RIVAL 欄（PC だけ。ライバル未登録なら出さない）: ライバルごとにランプ・EX SCORE・差 */
+	function songRivalHtml(c) {
+		if (!state.rivals.length) return "";
+		const rows = c.rivals.map((r, i) => {
+			const name = `<td>${esc(state.rivals[i].id)}</td>`;
+			if (!r.played) return `<tr>${name}<td class="hLamp muted">-</td><td class="num">-</td><td class="num">-</td></tr>`;
+			const cls = rivalCls(r);
+			const diff = r.diff != null ? `<span class="${cls}">${r.diff > 0 ? "+" : ""}${r.diff} <b>${RIVAL_RESULT[cls]}</b></span>` : "-";
+			return `<tr>${name}<td class="hLamp">${rivalLampHtml(r.lamp)}</td><td class="num">${r.ex}</td><td class="num">${diff}</td></tr>`;
+		}).join("");
+		return `<div class="drival"><div class="radarCaption muted">RIVAL</div><div style="overflow-x:auto"><table class="dtable">
+			<thead><tr><th>ライバル</th><th class="hLamp">ランプ</th><th>EX SCORE</th><th>差</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+	}
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
 		if (!c) return;
 		const s = c.song;
-		const rivalHead = state.rivals.map((r) => `<th>${esc(r.id)}</th>`).join("");
+		// ライバルの列はスマホだけ表の中に出す。PC は表の下の RIVAL 欄に分ける（表が右の列に収まらず横スクロールが出たため。2026-11-20）
+		const rivalHead = state.rivals.map((r) => `<th class="mOnly">${esc(r.id)}</th>`).join("");
 		// 押した譜面だけ出す（同じ曲のほかの難易度は出さない）
 		const rows = [c].map((x) => {
 			const rv = x.rivals.map((r) => {
-				if (!r.played) return `<td class="num">-</td>`;
+				if (!r.played) return `<td class="num mOnly">-</td>`;
 				const cls = rivalCls(r);
 				const diff = r.diff != null ? ` <span class="${cls}">(${r.diff > 0 ? "+" : ""}${r.diff}) <b>${RIVAL_RESULT[cls]}</b></span>` : "";
-				return `<td class="num">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
+				return `<td class="num mOnly">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
 			}).join("");
 			return `<tr class="${x.id === c.id ? "cur" : ""}" style="--dc:var(--d-${x.diff})">
 				<td class="lvcell mOnly">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
@@ -789,6 +803,7 @@ ${rv}
 				<thead><tr><th class="mOnly">${c.style}</th><th class="mOnly">NOTES</th><th class="mOnly">BPM</th><th class="dlamp">ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
+			${songRivalHtml(c)}
 			${songVideosHtml(c)}
 			${songHistoryHtml(c)}
 			</div>
