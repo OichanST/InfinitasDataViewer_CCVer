@@ -438,13 +438,12 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 #detail { width: min(820px, calc(100% - 24px)); }
 .dbody { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: start; }
 .dright .dvideo, .dright .dhist, .dright .drival { margin-top: 18px; }
-/* 詳細の RIVAL 欄は PC だけ（スマホは今までどおり表の中にライバルの列を出す） */
+/* 詳細の RIVAL 欄（PC・スマホとも。スマホも 2026-11-20 から表の中の列をやめてこの欄に） */
 .drival .hLamp { text-align: left; }
 .drival .rvRes { text-align: center; }
-@media (max-width: 640px) { .drival { display: none; } }
 @media (max-width: 640px) {
   .dbody { display: block; }
-  .dright .dvideo, .dright .dhist { margin-top: 14px; }
+  .dright .dvideo, .dright .dhist, .dright .drival { margin-top: 14px; }
 }
 @media (max-width: 640px) {
   .dchart { display: none; }

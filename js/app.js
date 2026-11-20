@@ -769,17 +769,9 @@
 		const c = state.charts.find((x) => x.id === id);
 		if (!c) return;
 		const s = c.song;
-		// ライバルの列はスマホだけ表の中に出す。PC は表の下の RIVAL 欄に分ける（表が右の列に収まらず横スクロールが出たため。2026-11-20）
-		const rivalHead = state.rivals.map((r) => `<th class="mOnly">${esc(r.id)}</th>`).join("");
+		// ライバルは PC・スマホとも表の下の RIVAL 欄に出す（表が右の列に収まらず横スクロールが出たため。スマホも 2026-11-20 から同じ形）
 		// 押した譜面だけ出す（同じ曲のほかの難易度は出さない）
 		const rows = [c].map((x) => {
-			const rv = x.rivals.map((r) => {
-				if (!r.played) return `<td class="num mOnly">-</td>`;
-				const cls = rivalCls(r);
-				// 差は「ライバル − 自分」で出す（r.diff は 自分 − ライバル。2026-11-20）
-				const diff = r.diff != null ? ` <span class="${cls}">(${-r.diff > 0 ? "+" : ""}${-r.diff}) <b>${RIVAL_RESULT[cls]}</b></span>` : "";
-				return `<td class="num mOnly">${r.ex}${diff}<div>${rivalLampHtml(r.lamp)}</div></td>`;
-			}).join("");
 			return `<tr style="--dc:var(--d-${x.diff})">
 				<td class="lvcell mOnly">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
 				<td class="num mOnly">${x.notes}</td><td class="num mOnly">${esc(x.bpm)}</td>
@@ -787,7 +779,6 @@
 				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted dsub"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.played ? `${x.ex}<span class="muted dsub"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.miss ?? "-"}</td>${state.csv ? `<td class="num"${x.lastPlay ? ` title="最終プレー ${esc(x.lastPlay)}"` : ""}>${x.plays || "-"}${x.lastPlay ? `<div class="muted dlast">${esc(csvTime(x.lastPlay))}</div>` : ""}</td>` : ""}
-${rv}
 			</tr>`;
 		}).join("");
 		$("#detailBody").innerHTML = `
@@ -807,7 +798,7 @@ ${rv}
 			<div class="dleft">${radarHtml(c)}</div>
 			<div class="dright">
 			<div style="overflow-x:auto"><table class="dtable">
-				<thead><tr><th class="mOnly">${c.style}</th><th class="mOnly">NOTES</th><th class="mOnly">BPM</th><th class="dlamp">ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}${rivalHead}</tr></thead>
+				<thead><tr><th class="mOnly">${c.style}</th><th class="mOnly">NOTES</th><th class="mOnly">BPM</th><th class="dlamp">ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
 			${songRivalHtml(c)}
