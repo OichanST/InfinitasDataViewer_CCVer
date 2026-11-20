@@ -449,7 +449,8 @@ IV.model = (() => {
 				return {
 					id: `${key}|${title}`, c, title, key, style: key.slice(0, 2), diff: key.slice(2),
 					level: c ? c.level : "", before, after,
-					lampUp: !before || after.lampIdx > before.lampIdx,
+					// NO PLAY → FAILED（初めて遊んで落ちた）はランプ更新に数えない（2026-11-20）
+					lampUp: after.lamp !== "FAILED" && after.lampIdx > (before ? before.lampIdx : 0),
 					exDiff: after.ex - (before ? before.ex : 0),
 					missDiff: before && before.miss != null && after.miss != null ? after.miss - before.miss : null,
 				};
