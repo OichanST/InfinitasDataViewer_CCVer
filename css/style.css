@@ -410,21 +410,40 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
 .dchartName b { font-size: 22px; font-weight: normal; margin-left: 2px; }
 .dchartSub { color: var(--muted); font-size: 12px; display: flex; gap: 12px; justify-content: flex-end; }
 .dchartSub b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 13px; }
-/* BPM はアーティストの下に（INFINITAS の選曲画面と同じく曲の情報として。PC だけ。2026-11-20）。スマホは今までどおり表の中に出す */
+/* BPM はアーティストの下に（INFINITAS の選曲画面と同じく曲の情報として。2026-11-20。スマホも 2026-11-21 から同じ） */
 .dbpm { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
 .dbpm b { color: var(--text); font-family: var(--num); font-weight: normal; font-size: 13px; }
-@media (min-width: 641px) { .dinfo:has(+ .dbpm) { margin-bottom: 2px; } }
-@media (max-width: 640px) { .dbpm { display: none; } }
-/* スマホは今までどおり表の中に譜面・NOTES・BPM を出す（曲名の右には出さない） */
-.dtable .mOnly { display: none; }
+.dinfo:has(+ .dbpm) { margin-bottom: 2px; }
 @media (min-width: 641px) {
   /* 画面の高さが低い（拡大表示・ノート PC）ときは、レーダーを縮めて詳細画面に縦スクロールが出ないようにする */
   #detail { max-height: 94vh; }
   .dleft .radarWrap svg { height: min(312px, max(180px, calc(94vh - 190px))); width: auto; }
-  .dtable .dlamp { text-align: left; }
-  /* DJ LEVEL の (A-79) と EX SCORE の (64.22%) は下の段に、括弧なしで（右の列を細くする） */
-  .dtable .dsub { display: block; font-size: 11px; }
-  .dtable .dsub .paren { display: none; }
+}
+/* スコアの表（PC・スマホとも。スマホも 2026-11-21 から PC と同じ。譜面・NOTES・BPM は表に入れず曲名の右と下に） */
+.dtable .dlamp { text-align: left; }
+/* DJ LEVEL の (A-79) と EX SCORE の (64.22%) は下の段に、括弧なしで（右の列を細くする） */
+.dtable .dsub { display: block; font-size: 11px; }
+.dtable .dsub .paren { display: none; }
+/* スコアの表のランプはスマホだけ略称（EASY CLEAR → EASY など） */
+.dtable .dlamp .lampShort { display: none; }
+@media (max-width: 640px) {
+  .dtable .dlamp .lampFull { display: none; }
+  .dtable .dlamp .lampShort { display: inline; }
+  /* 見出しの MISS COUNT は MISS だけ（スコアの表と HISTORY。2026-11-21） */
+  .dMissCount { display: none; }
+  /* 曲名は行の幅いっぱい、譜面（SP ANOTHER 12）と NOTES はいつもアーティスト・BPM の 2 行の右に、小さめで（2026-11-21）。
+     横並び＋折り返しだと曲名の長さで位置が変わっていた。ジャンルがない曲は g の行が 0 になる */
+  .dhead { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "g g" "t t" "i c" "b c"; gap: 0 12px; align-items: end; }
+  .dsong { display: contents; }
+  .dgenre { grid-area: g; }
+  .dsong h2 { grid-area: t; }
+  .dinfo { grid-area: i; }
+  .dbpm { grid-area: b; }
+  .dchart { grid-area: c; }
+  .dchartName { font-size: 13px; }
+  .dchartName b { font-size: 18px; }
+  .dchartSub { font-size: 11px; }
+  .dchartSub b { font-size: 12px; }
 }
 /* 詳細の HISTORY: ランプは「→ 後」を2段目に、EX SCORE・MISS COUNT の差分は下の段に括弧なしで（PC・スマホとも。スマホは 2026-11-20 から。横スクロールが出ていた） */
 .dhist .hTo { display: block; }
@@ -446,10 +465,6 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
   .dright .dvideo, .dright .dhist, .dright .drival { margin-top: 14px; }
   /* スマホは詳細が縦に長くなるので、レーダーを元の大きさ（270×240、1.3 倍の 351×312 から縮める）に（2026-11-20） */
   .dleft .radarWrap svg { height: 240px; width: auto; }
-}
-@media (max-width: 640px) {
-  .dchart { display: none; }
-  .dtable .mOnly { display: table-cell; }
 }
 .dinfo { color: var(--muted); font-size: 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .radarWrap { display: flex; flex-direction: column; align-items: center; margin: 4px 0 12px; }

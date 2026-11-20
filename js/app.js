@@ -358,7 +358,7 @@
 		}
 		if (!rows.length) return "";
 		return `<div class="dhist"><div class="radarCaption muted">HISTORY</div><div style="overflow-x:auto"><table class="dtable">
-			<thead><tr><th>日付</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th></tr></thead><tbody>${rows.join("")}</tbody></table></div></div>`;
+			<thead><tr><th>日付</th><th>ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS<span class="dMissCount"> COUNT</span></th></tr></thead><tbody>${rows.join("")}</tbody></table></div></div>`;
 	}
 
 	// ---------- プレイヤーのノーツレーダー ----------
@@ -776,9 +776,7 @@
 		// 押した譜面だけ出す（同じ曲のほかの難易度は出さない）
 		const rows = [c].map((x) => {
 			return `<tr style="--dc:var(--d-${x.diff})">
-				<td class="lvcell mOnly">${M.DIFF_NAMES[x.diff]} ${x.level}</td>
-				<td class="num mOnly">${x.notes}</td><td class="num mOnly">${esc(x.bpm)}</td>
-				<td class="dlamp" style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : esc(x.lamp)}</td>
+				<td class="dlamp" style="color:var(--lt-${cssKey(x.lamp)}, var(--l-${cssKey(x.lamp)}))">${x.lamp === M.LOCKED ? "未解禁" : lampFS(x.lamp)}</td>
 				<td class="num">${x.played ? `<span style="color:var(--g-${x.grade})">${x.grade}</span><span class="muted dsub"><span class="paren">(</span>${esc(x.gradeDetail)}<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.played ? `${x.ex}<span class="muted dsub"><span class="paren">(</span>${(x.rate * 100).toFixed(2)}%<span class="paren">)</span></span>` : "-"}</td>
 				<td class="num">${x.miss ?? "-"}</td>${state.csv ? `<td class="num"${x.lastPlay ? ` title="最終プレー ${esc(x.lastPlay)}"` : ""}>${x.plays || "-"}${x.lastPlay ? `<div class="muted dlast">${esc(csvTime(x.lastPlay))}</div>` : ""}</td>` : ""}
@@ -801,7 +799,7 @@
 			<div class="dleft">${radarHtml(c)}</div>
 			<div class="dright">
 			<div style="overflow-x:auto"><table class="dtable">
-				<thead><tr><th class="mOnly">${c.style}</th><th class="mOnly">NOTES</th><th class="mOnly">BPM</th><th class="dlamp">ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS COUNT</th>${state.csv ? "<th>PLAY</th>" : ""}</tr></thead>
+				<thead><tr><th class="dlamp">ランプ</th><th>DJ LEVEL</th><th>EX SCORE</th><th>MISS<span class="dMissCount"> COUNT</span></th>${state.csv ? "<th>PLAY</th>" : ""}</tr></thead>
 				<tbody>${rows}</tbody>
 			</table></div>
 			${songRivalHtml(c)}
