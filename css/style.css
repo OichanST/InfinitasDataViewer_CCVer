@@ -1,5 +1,5 @@
 :root {
-  --bg: #030a22; --panel: rgba(8,16,40,.86); --panel2: rgba(18,32,66,.92); --line: #2a3e6a; --text: #e8ebf2; --muted: #8b93a7; --accent: #4fc3f7;
+  --bg: #030a22; --panel: rgba(16,18,24,.74); --panel2: rgba(44,48,58,.86); --line: #2a3e6a; --text: #e8ebf2; --muted: #8b93a7; --accent: #4fc3f7;
   --num: "Kdam Thmor Pro", "Segoe UI", system-ui, sans-serif;
   /* 曲名: INFINITAS の選曲リストに近い、横長で角の丸い英字＋細めのゴシック */
   --title: "Saira Semi Expanded", "M PLUS 1p", "Segoe UI", sans-serif;
@@ -15,19 +15,16 @@
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-/* 背景: INFINITAS の選曲画面の配色（端は濃紺、中央に強い青の光、左寄りに水色の同心円、斜めの光の筋）を CSS で再現。画像は使わない */
-body { margin: 0; color: var(--text); background-color: var(--bg); background-attachment: fixed;
+/* 背景: INFINITAS の選曲画面の配色を CSS で。画像は使わない。
+   同心円と斜めの光の筋は 2026-11-20 にやめた（シンプルに。PC・スマホとも）。
+   同日、選曲画面の録画の平均の色（R60 G100 B150 前後・明るさ 90 前後）に合わせて明るい青にした（以前は #030a22 の濃紺で明るさ 20 前後） */
+body { margin: 0; color: var(--text); background-color: #2c5a92; background-attachment: fixed;
   background-image:
-    /* 左寄りの同心円 */
-    radial-gradient(circle at 20% 62%, transparent 0 150px, rgba(120,210,255,.35) 151px 153px, transparent 154px 215px, rgba(120,210,255,.22) 216px 228px, transparent 229px 300px, rgba(120,210,255,.30) 301px 303px, transparent 304px 390px, rgba(90,180,255,.16) 391px 420px, transparent 421px 520px, rgba(120,210,255,.20) 521px 523px, transparent 524px),
-    /* 斜めの光の筋 */
-    linear-gradient(118deg, transparent 0 30%, rgba(90,200,255,.22) 30% 30.4%, transparent 30.4% 44%, rgba(90,200,255,.16) 44% 45.5%, transparent 45.5% 57%, rgba(120,220,255,.28) 57% 57.25%, transparent 57.25% 70%, rgba(90,200,255,.12) 70% 72%, transparent 72%),
-    linear-gradient(28deg, transparent 0 62%, rgba(90,200,255,.14) 62% 62.3%, transparent 62.3% 80%, rgba(90,200,255,.10) 80% 81.5%, transparent 81.5%),
     /* 青い光 */
-    radial-gradient(ellipse 45% 40% at 22% 55%, rgba(60,170,255,.25), transparent 70%),
-    radial-gradient(ellipse 75% 60% at 38% 35%, rgba(24,110,215,.5), transparent 72%),
-    radial-gradient(ellipse 45% 35% at 82% 8%, rgba(8,160,225,.3), transparent 70%),
-    radial-gradient(ellipse 70% 55% at 65% 100%, rgba(25,55,150,.5), transparent 75%);
+    radial-gradient(ellipse 45% 40% at 22% 55%, rgba(110,200,255,.35), transparent 70%),
+    radial-gradient(ellipse 75% 60% at 38% 35%, rgba(70,150,235,.45), transparent 72%),
+    radial-gradient(ellipse 45% 35% at 82% 8%, rgba(60,190,240,.35), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 65% 100%, rgba(20,50,130,.45), transparent 75%);
   font: 14px/1.5 "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -38,7 +35,7 @@ button { cursor: pointer; }
 .num, .lv, .ex, .grade { font-family: var(--num); letter-spacing: .02em; }
 
 /* ヘッダー */
-.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: rgba(4,10,30,.88); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
 .top h1 { margin: 0; font: 18px var(--num); letter-spacing: .08em; }
 .top h1 span { color: var(--accent); }
 .top .user { margin-left: 6px; background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; font-family: var(--num); }
@@ -63,7 +60,9 @@ body:has(#app[hidden]) .top .tabs { display: none; }
 
 /* 絞り込み */
 main { max-width: 1100px; margin: 0 auto; padding: 0 12px 60px; }
-.filters { position: sticky; top: 45px; z-index: 10; background: rgba(4,10,30,.85); backdrop-filter: blur(6px); padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
+.filters { position: sticky; top: 45px; z-index: 10; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
+/* PC は帯の端が見えるので、中のボタンが端にくっつかないよう左右にも余白を入れる（2026-11-20。スマホは帯が画面いっぱいなのでそのまま） */
+@media (min-width: 641px) { .filters { padding-left: 12px; padding-right: 12px; } }
 .frow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .frow + .frow { margin-top: 8px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -89,7 +88,7 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 /* 一覧 / 地力表 の切り替え */
 .tabs { display: flex; gap: 4px; padding-top: 10px; border-bottom: 1px solid var(--line); }
 .tabs button { background: none; border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 4px 14px; color: var(--muted); margin-bottom: -1px; }
-.tabs button[aria-selected="true"] { color: var(--text); background: rgba(4,10,30,.85); border-color: var(--line); border-bottom: 1px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--text); background: rgba(0,0,0,.55); border-color: var(--line); border-bottom: 1px solid transparent; }
 .tabs button { white-space: nowrap; flex-shrink: 0; }
 /* スマホ: タブ名を折り返さず、入りきらなければ横にスクロール */
 @media (max-width: 640px) {
