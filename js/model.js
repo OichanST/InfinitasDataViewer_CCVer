@@ -428,7 +428,59 @@ IV.model = (() => {
 	 * 変化は [曲名, "SPA", [ランプ, EX, MISS] or null, [ランプ, EX, MISS]]。譜面が一覧にあれば c に入る（DJ LEVEL・詳細表示用）
 	 */
 	const matcherCache = new WeakMap();
+	// 絞り込みのたびに呼ばれるので、一覧と履歴が同じなら作り直さない（レーダーの計算が重いため。2026-11-21）
+	const sessionsCache = new WeakMap();
 	function historySessions(history, charts) {
+		const hit = sessionsCache.get(charts);
+		if (hit && hit.history === history) return hit.sessions;
+		const sessions = buildHistorySessions(history, charts);
+		attachHistoryRadar(sessions, charts);
+		sessionsCache.set(charts, { history, sessions });
+		return sessions;
+	}
+
+	/**
+	 * 履歴の各回で、プレイヤーのノーツレーダー（playerRadar）が上がった項目と、上げた譜面（2026-11-21）。
+	 * 今のスコアから新しい回の順に「前の EX」へ戻しながら、回の前と後のレーダーを計算して比べる。
+	 * 上げた譜面＝その回でスコアが伸び、回の後にその項目の上位10曲に入っていて、回の前より値が上がった譜面。
+	 * 回に s.radarUp = [{ style, f, before, after }]、変化に x.radarUp = [{ f, before, after }]（before / after は項目全体の値）
+	 */
+	function attachHistoryRadar(sessions, charts) {
+		const cur = new Map(charts.filter((c) => c.radar && c.notes > 0).map((c) => [c.id, { c, ex: c.ex, played: c.played }]));
+		const snap = () => [...cur.values()].map(({ c, ex, played }) => ({
+			id: c.id, title: c.title, style: c.style, radar: c.radar, notes: c.notes, played, rate: played ? ex / (c.notes * 2) : 0,
+		}));
+		for (const s of sessions) { // 新しい順
+			s.radarUp = [];
+			for (const x of s.changes) x.radarUp = [];
+			if (s.baseline) continue;
+			const afterCharts = snap();
+			for (const x of s.changes) {
+				const e = cur.get(x.id);
+				if (!e) continue;
+				e.ex = x.before ? x.before.ex : 0;
+				e.played = !!x.before && x.before.lamp !== "NO PLAY";
+			}
+			const beforeCharts = snap();
+			for (const style of ["SP", "DP"]) {
+				const changed = s.changes.filter((x) => x.style === style && x.exDiff > 0 && cur.has(x.id));
+				if (!changed.length) continue;
+				const A = playerRadar(afterCharts, style), B = playerRadar(beforeCharts, style);
+				for (const f of RADAR_FIELDS) {
+					if (A[f].value <= B[f].value) continue;
+					const up = { f, before: B[f].value, after: A[f].value };
+					s.radarUp.push({ style, ...up });
+					const bScore = new Map(B[f].top.map((t) => [t.c.id, t.score]));
+					for (const x of changed) {
+						const t = A[f].top.find((t) => t.c.id === x.id);
+						if (t && t.score > (bScore.get(x.id) ?? 0)) x.radarUp.push(up);
+					}
+				}
+			}
+		}
+	}
+
+	function buildHistorySessions(history, charts) {
 		const byId = new Map(charts.map((c) => [c.id, c]));
 		// スコア CSV から作った履歴は曲名が CSV の表記（「，」や末尾の空白など）なので、楽曲データの曲名に合わせる
 		// （絞り込みのたびに呼ばれるので、一覧が同じなら作り直さない）

@@ -177,6 +177,11 @@ details.hSession:not([open]) h3 { margin-bottom: 0; }
 .hUp { color: #7ee36b; } .hDown { color: #ff6b6b; }
 .hTable th:nth-child(3), .hTable td.hGrade, .dhist .dtable th:nth-child(3), .dhist .dtable td.hGrade { text-align: center; }
 .hNone { margin: 4px 0 0; font-size: 12px; }
+/* ノーツレーダーが上がった回（見出しの印と、表の一番右の RADAR UPDATE 列。2026-11-21） */
+.hSession h3 .hRadarUp { color: #7ee36b; }
+.hTable .hRadar { text-align: left; white-space: nowrap; font-size: 12px; }
+/* スマホはまだ出さない（PC だけ。スマホはユーザーが実機で見ながら後で決める） */
+@media (max-width: 640px) { .hSession h3 .hRadarUp, .hTable .hRadar { display: none; } }
 /* スマホ: 1譜面を2段に（上に曲名、下にランプ・DJ LEVEL・EX SCORE・MISS COUNT）。横スクロールなしで全部見える */
 @media (max-width: 640px) {
   .hTable { min-width: 0; }
