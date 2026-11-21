@@ -261,6 +261,13 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
    HARD は FAILED の帯色より明るい赤、FAILED は白を薄めに */
 .abTile.L-HARD_CLEAR { background: color-mix(in srgb, #e8473c 26%, var(--panel)); }
 .abTile.L-FAILED { background: color-mix(in srgb, var(--l-HARD_CLEAR) 9%, var(--panel)); }
+/* PC: HARD・EASY・CLEAR を強調し、NO PLAY は引っ込める（案B。2026-11-21 ユーザー指定。スマホはそのまま）
+   HARD は赤を濃くして白い枠、EASY・CLEAR は背景を濃くしてランプ色の枠、NO PLAY は背景なし・枠も薄く */
+@media (min-width: 641px) {
+  .abTile.L-HARD_CLEAR { background: color-mix(in srgb, #e8473c 50%, var(--panel)); border-color: var(--l-HARD_CLEAR); }
+  .abTile.L-EASY_CLEAR, .abTile.L-CLEAR { background: color-mix(in srgb, var(--lc) 34%, var(--panel)); border-color: var(--lc); }
+  .abTile.L-NO_PLAY { background: transparent; border-color: color-mix(in srgb, var(--lc) 25%, transparent); }
+}
 .abTile .t { width: 100%; font-family: var(--title); font-size: 14px; font-weight: 500; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .abTile .lampname { font-size: 10px; }
 .abTile.L-LOCKED { opacity: .55; }
