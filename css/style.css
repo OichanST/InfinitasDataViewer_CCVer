@@ -125,6 +125,8 @@ select { background: var(--panel); border: 1px solid var(--line); border-radius:
 .fdList { margin: 2px 0 10px 14px; }
 .fdBar { height: 10px; } .fdBar span { cursor: inherit; }
 @media (max-width: 640px) { .fdRow { grid-template-columns: minmax(0, 1fr) auto; } .fdBar { grid-column: 1 / -1; } }
+/* スマホはフォルダの中のカードの左の余白を 14px → 0 に（一覧と同じ幅。地力表の札を一覧と同じくレーダーの右に入れるため。2026-11-21） */
+@media (max-width: 640px) { .fdList { margin-left: 0; } }
 
 /* プレイヤーのノーツレーダー */
 .pradar { padding: 10px 0; }
@@ -348,7 +350,7 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .radarBox .ri { display: flex; flex-direction: column; white-space: nowrap; line-height: 1.3; }
 .radarBox .rl { font-size: 9px; letter-spacing: .04em; }
 .radarBox .rv { color: var(--text); font-size: 12px; }
-@media (max-width: 640px) { .radarBox { grid-template-columns: repeat(3, auto); } }
+@media (max-width: 640px) { .radarBox { grid-template-columns: repeat(3, auto); padding: 3px 6px; } } /* 左右の余白 10px → 6px（SOF-LAN の数字がある曲でも地力表の札が右に入るように。2026-11-21） */
 /* PC: 項目名が枠の上の線に近かったので、上の余白だけ広げる（2026-11-21。スマホはそのまま） */
 @media (min-width: 641px) { .radarBox { padding-top: 6px; } }
 .abilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
@@ -359,7 +361,7 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 /* スマホも PC と同じくレーダーの右に縦に並べる（2026-11-21。右のスコア欄を細くして幅を空けた。Xperia 1 V の 411px 幅で入る）。
    入らない幅（曲の欄が 232px 未満。360px の画面など）では、元どおりレーダーの下に横 1 列 */
 @media (max-width: 640px) {
-  .radarRow { flex-wrap: wrap; }
+  .radarRow { flex-wrap: wrap; align-items: flex-start; } /* 札はレーダーの枠の上の端にそろえる（2026-11-21。PC は上下の真ん中のまま） */
   .item .main { container-type: inline-size; }
   @container (max-width: 231px) { .radarRow .abilityRow { flex-direction: row; } }
 }
