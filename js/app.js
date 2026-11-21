@@ -533,7 +533,7 @@
 			<div class="lv">${c.level}<small>${c.key}</small></div>
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
-				<div class="sub"><span class="num">${esc(c.bpm)} BPM</span><span class="num">${c.notes} NOTES</span></div>
+				<div class="sub"><span><b>${esc(c.bpm)}</b> BPM</span><span><b>${c.notes}</b> NOTES</span></div>
 			</div>
 			<div class="rvCmp num">
 				<span class="rvWho">${esc(state.id)}</span>${me}
@@ -610,7 +610,7 @@
 			<div class="lv">${c.level}<small>${c.key}</small></div>
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
-				<div class="sub"><span class="num">${esc(c.bpm)} BPM</span><span class="num">${c.notes} NOTES</span></div>
+				<div class="sub"><span><b>${esc(c.bpm)}</b> BPM</span><span><b>${c.notes}</b> NOTES</span></div>
 				${radarMiniHtml(c, abilityHtml(c))}
 			</div>
 			<div class="score">${score}</div>
