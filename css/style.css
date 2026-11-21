@@ -296,7 +296,16 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .rvView #rivalCtl { margin-bottom: 8px; }
 .rsBtn { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; color: var(--text); font-size: 13px; }
 .rsBtn[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.item.rvItem { grid-template-columns: 14px 34px minmax(0, 1fr) auto 4.6em; }
+/* PC: 曲名・BPM の列 / スコアの列 / WIN・LOSE の列。HTML では BPM とスコアを .rvInfo にまとめている（スマホで横に並べるため）ので、
+   PC は .main と .rvInfo を display: contents にして、以前と同じ並びをグリッドの領域で作る（2026-11-21） */
+.item.rvItem { grid-template-columns: 14px 34px minmax(0, 1fr) auto 4.6em; grid-template-areas: "bar lv title cmp res" "bar lv sub cmp res"; }
+.rvItem .main, .rvItem .rvInfo { display: contents; }
+.rvItem .lampbar { grid-area: bar; }
+.rvItem .lv { grid-area: lv; }
+.rvItem .title { grid-area: title; min-width: 0; align-self: end; }
+.rvItem .sub { grid-area: sub; align-self: start; } /* 曲名と BPM はくっつけて、2 行まとめてカードの上下の真ん中に（以前の .main と同じ） */
+.rvItem .rvCmp { grid-area: cmp; }
+.rvItem .rvRes { grid-area: res; }
 /* 列の幅を固定して、行ごとに右側の位置がずれないようにする（DJ NAME 最大6文字 / EX 4桁 / EX HARD CLEAR） */
 .rvCmp { display: grid; grid-template-columns: 4.2em 3em 8.4em; gap: 2px 8px; align-items: baseline; font-size: 14px; }
 .rvCmp .rvlamp { white-space: nowrap; }
@@ -306,18 +315,15 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .rvRes b { display: block; font-size: 15px; }
 .rvRes.w { color: #ffd400; } .rvRes.l { color: #3fa9ff; } .rvRes.d { color: #46d160; }
 .rvCmp .lampShort { display: none; }
-/* スマホ: 曲名は横いっぱい（WIN/LOSE の列にもかかる）、その下に BPM・NOTES の 1 行、その下にスコアとランプ（略記）。
-   左のランプの帯はカードの上から下まで。WIN/LOSE は小さく（2026-11-21。以前は帯がスコアの段で切れていた） */
+/* スマホ: 曲名は横いっぱい（WIN/LOSE の列にもかかる）、その下の段に BPM・NOTES の 1 行と、その右にスコアとランプ（略記）。
+   入りきらない曲（BPM が 100-400 など）はスコアが下に折り返す。左のランプの帯はカードの上から下まで。WIN/LOSE は小さく（2026-11-21） */
 @media (max-width: 640px) {
-  .item.rvItem { grid-template-columns: 10px 30px minmax(0, 1fr) 2.8em; grid-template-areas: "bar lv title title" "bar lv sub res" "bar lv cmp res"; }
-  .rvItem .main { display: contents; }
-  .rvItem .lampbar { grid-area: bar; }
-  .rvItem .lv { grid-area: lv; }
-  .rvItem .title { grid-area: title; min-width: 0; }
-  .rvItem .sub { grid-area: sub; }
-  .rvCmp { grid-area: cmp; grid-template-columns: 3.6em 3em 4.6em; gap: 2px 6px; font-size: 12px; }
+  .item.rvItem { grid-template-columns: 10px 30px minmax(0, 1fr) 2.6em; grid-template-areas: "bar lv title title" "bar lv info res"; }
+  .rvItem .rvInfo { grid-area: info; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 6px; min-width: 0; }
+  .rvItem .sub { gap: 8px; }
+  .rvCmp { grid-template-columns: 3.4em 3em 4.6em; gap: 2px 4px; font-size: 12px; } /* 余白を詰めて、411px で BPM・NOTES の右に入るように */
   .rvCmp .lampFull { display: none; } .rvCmp .lampShort { display: inline; }
-  .rvRes { grid-area: res; font-size: 11px; }
+  .rvRes { font-size: 11px; }
   .rvRes b { font-size: 12px; }
 }
 .rivalsum .w { color: #ffd400; } .rivalsum .l { color: #3fa9ff; } .rivalsum .d { color: #46d160; }

@@ -533,11 +533,13 @@
 			<div class="lv">${c.level}<small>${c.key}</small></div>
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
-				<div class="sub"><span><b>${esc(c.bpm)}</b> BPM</span><span><b>${c.notes}</b> NOTES</span></div>
-			</div>
-			<div class="rvCmp num">
-				<span class="rvWho">${esc(state.id)}</span>${me}
-				<span class="rvWho">${esc(r.id || "")}</span><span class="rvEx">${r.ex ?? "-"}</span>${rivalLampHtml(r.lamp)}
+				<div class="rvInfo">
+					<div class="sub"><span><b>${esc(c.bpm)}</b> BPM</span><span><b>${c.notes}</b> NOTES</span></div>
+					<div class="rvCmp num">
+						<span class="rvWho">${esc(state.id)}</span>${me}
+						<span class="rvWho">${esc(r.id || "")}</span><span class="rvEx">${r.ex ?? "-"}</span>${rivalLampHtml(r.lamp)}
+					</div>
+				</div>
 			</div>
 			<div class="rvRes ${cls}">${cls ? `<b>${RIVAL_RESULT[cls]}</b><span class="num">${r.diff > 0 ? "+" : ""}${r.diff}</span>` : ""}</div>
 		</article>`;
