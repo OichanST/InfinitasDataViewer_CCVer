@@ -1,5 +1,5 @@
 :root {
-  --bg: #030a22; --panel: rgba(16,18,24,.74); --panel2: rgba(44,48,58,.86); --line: #2a3e6a; --text: #e8ebf2; --muted: #8b93a7; --accent: #4fc3f7;
+  --bg: #030a22; --panel: rgba(16,18,24,.64); --panel2: rgba(44,48,58,.86); --line: #2a3e6a; --text: #e8ebf2; --muted: #8b93a7; --accent: #4fc3f7;
   --num: "Kdam Thmor Pro", "Segoe UI", system-ui, sans-serif;
   /* 曲名: INFINITAS の選曲リストに近い、横長で角の丸い英字＋細めのゴシック */
   --title: "Saira Semi Expanded", "M PLUS 1p", "Segoe UI", sans-serif;
