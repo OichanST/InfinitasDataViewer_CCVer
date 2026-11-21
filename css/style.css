@@ -331,6 +331,8 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .radarBox .rl { font-size: 9px; letter-spacing: .04em; }
 .radarBox .rv { color: var(--text); font-size: 12px; }
 @media (max-width: 640px) { .radarBox { grid-template-columns: repeat(3, auto); } }
+/* PC: 項目名が枠の上の線に近かったので、上の余白だけ広げる（2026-11-21。スマホはそのまま） */
+@media (min-width: 641px) { .radarBox { padding-top: 6px; } }
 .abilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; }
 /* レーダーの枠の右に、上に N地力・下に H地力 */
 .radarRow .abilityRow { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; margin-top: 0; }
