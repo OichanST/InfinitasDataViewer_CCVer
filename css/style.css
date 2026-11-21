@@ -327,8 +327,8 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .tag.radar-SOF-LAN { color: #6a9fd8; border: 1px solid #6a9fd8; }
 .tag.radar-CHARGE { color: #7d5fe4; border: 1px solid #7d5fe4; }
 .tag.radar-CHORD { color: #abe583; border: 1px solid #abe583; }
-/* 6項目を同じ幅の列に並べ、曲が違っても各項目の位置がそろうようにする */
-.radarBox { display: inline-grid; grid-template-columns: repeat(6, 58px); gap: 2px 8px; padding: 3px 10px; border: 1px solid #64748f; border-radius: 6px; color: var(--muted); font-size: 11px; width: fit-content; }
+/* 6項目を同じ幅の列に並べ、曲が違っても各項目の位置がそろうようにする（列の幅は 58px → 48px に詰めた。2026-11-21。スマホは下で 3 列・幅は中身なり） */
+.radarBox { display: inline-grid; grid-template-columns: repeat(6, 48px); gap: 2px 8px; padding: 3px 10px; border: 1px solid #64748f; border-radius: 6px; color: var(--muted); font-size: 11px; width: fit-content; }
 /* ↑ 枠線 #64748f はパネルの地（rgb(25,41,63)）に対してコントラスト比 3.1（--line の #2a3e6a は 1.4 で見えなかった。2026-11-20） */
 .radarBox .ri { display: flex; flex-direction: column; white-space: nowrap; line-height: 1.3; }
 .radarBox .rl { font-size: 9px; letter-spacing: .04em; }
