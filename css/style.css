@@ -244,9 +244,9 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
   .abcTable .abcPlay { display: none; } /* スマホはあとで実機で調整（今は今までどおり出さない） */
 }
 #abTotal b { font: 16px var(--num); color: var(--text); }
-/* ランクごとの塊を1枚のパネルに（見出しの札が背景の青に負けて見づらかった。候補の枠 .abCand と同じ作り。2026-11-21。スマホも同じ） */
-.abGroup { margin-top: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-.abHead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; }
+.abGroup { margin-top: 14px; }
+/* 見出しの行だけパネルに入れる（札が背景の青に負けて見づらかった。曲のタイルはパネルの外。候補の枠 .abCand と同じ作り。2026-11-21。スマホも同じ） */
+.abHead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .abHead .tag { margin-left: 0; font-size: 12px; padding: 1px 6px; }
 .abHead b { font-family: var(--num); font-size: 15px; }
 .abBar { flex: 1; max-width: 360px; height: 8px; }
