@@ -592,17 +592,19 @@
 	const rivalCls = (r) => r.diff == null ? "" : r.diff > 0 ? "w" : r.diff < 0 ? "l" : "d";
 	const RIVAL_RESULT = { w: "WIN", l: "LOSE", d: "EVEN" };
 	/** ライバルのクリアステータス（ランプと同じ色の文字） */
-	const rivalLampHtml = (lamp) => lamp ? `<span class="rvlamp" style="color:var(--lt-${cssKey(lamp)}, var(--l-${cssKey(lamp)}))">${esc(lamp)}</span>` : "";
+	const rivalLampHtml = (lamp) => lamp ? `<span class="rvlamp" style="color:var(--lt-${cssKey(lamp)}, var(--l-${cssKey(lamp)}))"><span class="lampFull">${esc(lamp)}</span><span class="lampShort">${esc(M.LAMP_SHORT[lamp] || lamp)}</span></span>` : "";
 	function rowHtml(c) {
 		const lampName = c.lamp === M.LOCKED ? "未解禁" : c.lamp;
-		let score = `<span class="lampname">${esc(lampName)}</span>`;
+		// スマホはランプ名を略記（スコア欄を細くしたため。2026-11-21）
+		const lampTxt = `<span class="lampFull">${esc(lampName)}</span><span class="lampShort">${esc(M.LAMP_SHORT[c.lamp] || lampName)}</span>`;
+		let score = `<span class="lampname">${lampTxt}</span>`;
 		if (c.played) {
 			score = `
 				<div class="gradeBox"><div class="grade" style="--gc:var(--g-${c.grade})">${c.grade}</div><div class="rate gradeNext">${esc(c.gradeDetail)}</div></div>
 				<div><div class="ex">${c.ex}<small> /${c.notes * 2}</small></div>
 				<div class="rate">${(c.rate * 100).toFixed(2)}%</div>
-				${c.miss != null ? `<div class="rate">MISS COUNT ${c.miss}</div>` : ""}
-				<div class="lampname">${esc(lampName)}</div></div>`;
+				${c.miss != null ? `<div class="rate"><span class="missFull">MISS COUNT</span><span class="missShort">MISS</span> ${c.miss}</div>` : ""}
+				<div class="lampname">${lampTxt}</div></div>`;
 		}
 		// ライバルとの比較はライバルタブに出す（一覧がうるさくなるので、ここには出さない）
 		return `<article class="item L-${cssKey(c.lamp)}" data-id="${esc(c.id)}" style="--lc:var(--l-${cssKey(c.lamp)});--dc:var(--d-${c.diff})">

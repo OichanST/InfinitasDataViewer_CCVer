@@ -261,13 +261,11 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
    HARD は FAILED の帯色より明るい赤、FAILED は白を薄めに */
 .abTile.L-HARD_CLEAR { background: color-mix(in srgb, #e8473c 26%, var(--panel)); }
 .abTile.L-FAILED { background: color-mix(in srgb, var(--l-HARD_CLEAR) 9%, var(--panel)); }
-/* PC: HARD・EASY・CLEAR を強調する（案B。2026-11-21 ユーザー指定。スマホはそのまま）
+/* HARD・EASY・CLEAR を強調する（案B。2026-11-21 ユーザー指定。最初は PC だけ、同日にスマホも同じにした）
    HARD は赤を濃くして白い枠、EASY・CLEAR は背景を濃くしてランプ色の枠。
    NO PLAY を背景なしにする案は、かえって目立ったので同日にやめた（元のまま） */
-@media (min-width: 641px) {
-  .abTile.L-HARD_CLEAR { background: color-mix(in srgb, #e8473c 50%, var(--panel)); border-color: var(--l-HARD_CLEAR); }
-  .abTile.L-EASY_CLEAR, .abTile.L-CLEAR { background: color-mix(in srgb, var(--lc) 34%, var(--panel)); border-color: var(--lc); }
-}
+.abTile.L-HARD_CLEAR { background: color-mix(in srgb, #e8473c 50%, var(--panel)); border-color: var(--l-HARD_CLEAR); }
+.abTile.L-EASY_CLEAR, .abTile.L-CLEAR { background: color-mix(in srgb, var(--lc) 34%, var(--panel)); border-color: var(--lc); }
 .abTile .t { width: 100%; font-family: var(--title); font-size: 14px; font-weight: 500; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .abTile .lampname { font-size: 10px; }
 .abTile.L-LOCKED { opacity: .55; }
@@ -305,10 +303,20 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .rvRes { text-align: center; font-size: 12px; line-height: 1.2; }
 .rvRes b { display: block; font-size: 15px; }
 .rvRes.w { color: #ffd400; } .rvRes.l { color: #3fa9ff; } .rvRes.d { color: #46d160; }
+.rvCmp .lampShort { display: none; }
+/* スマホ: 曲名は横いっぱい（WIN/LOSE の列にもかかる）、その下に BPM・NOTES の 1 行、その下にスコアとランプ（略記）。
+   左のランプの帯はカードの上から下まで。WIN/LOSE は小さく（2026-11-21。以前は帯がスコアの段で切れていた） */
 @media (max-width: 640px) {
-  .item.rvItem { grid-template-columns: 10px 30px minmax(0, 1fr) 3.8em; }
-  .rvCmp { grid-column: 3 / 4; font-size: 13px; }
-  .rvRes { grid-row: 1 / 3; grid-column: 4; }
+  .item.rvItem { grid-template-columns: 10px 30px minmax(0, 1fr) 2.8em; grid-template-areas: "bar lv title title" "bar lv sub res" "bar lv cmp res"; }
+  .rvItem .main { display: contents; }
+  .rvItem .lampbar { grid-area: bar; }
+  .rvItem .lv { grid-area: lv; }
+  .rvItem .title { grid-area: title; min-width: 0; }
+  .rvItem .sub { grid-area: sub; }
+  .rvCmp { grid-area: cmp; grid-template-columns: 3.6em 3em 4.6em; gap: 2px 6px; font-size: 12px; }
+  .rvCmp .lampFull { display: none; } .rvCmp .lampShort { display: inline; }
+  .rvRes { grid-area: res; font-size: 11px; }
+  .rvRes b { font-size: 12px; }
 }
 .rivalsum .w { color: #ffd400; } .rivalsum .l { color: #3fa9ff; } .rivalsum .d { color: #46d160; }
 
@@ -348,10 +356,12 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .radarRow .abilityRow { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; margin-top: 0; }
 /* 地力タグは A+ でも E でも個人差でも同じ大きさ（一番長い「H個人差S+」に合わせた固定幅） */
 .abilityRow .tag { white-space: nowrap; display: inline-block; box-sizing: border-box; width: 6.4em; text-align: center; margin-left: 0; vertical-align: middle; }
-/* スマホは右に入る幅がないので、レーダーの下に横並び */
+/* スマホも PC と同じくレーダーの右に縦に並べる（2026-11-21。右のスコア欄を細くして幅を空けた。Xperia 1 V の 411px 幅で入る）。
+   入らない幅（曲の欄が 232px 未満。360px の画面など）では、元どおりレーダーの下に横 1 列 */
 @media (max-width: 640px) {
   .radarRow { flex-wrap: wrap; }
-  .radarRow .abilityRow { flex-direction: row; }
+  .item .main { container-type: inline-size; }
+  @container (max-width: 231px) { .radarRow .abilityRow { flex-direction: row; } }
 }
 .tag.tier-Sp { color: #ff3b3b; border: 1px solid #ff3b3b; }
 .tag.tier-S { color: #ff8a3d; border: 1px solid #ff8a3d; }
@@ -380,6 +390,7 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .item .score > div:last-child { white-space: nowrap; }
 .item .score > .lampname:only-child { grid-column: 1 / -1; }
 .item .score .lampname { font-size: 13px; } /* 一覧のクリア状況だけ少し大きく（2026-11-13 ユーザー指定） */
+.item .score .lampShort { display: none; } /* スマホだけ略記（下の @media） */
 .rv { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; margin-top: 4px; }
 .rv .w, .dtable .w { color: #ffd400; } .rv .l, .dtable .l { color: #3fa9ff; } .rv .d, .dtable .d { color: #46d160; }
 /* ライバル1人分（スコア・差・WIN/LOSE/EVEN の後ろにクリアステータス） */
@@ -412,6 +423,9 @@ dialog { background: var(--panel); color: var(--text); border: 1px solid var(--l
 .dvLinks { display: grid; grid-template-columns: max-content max-content 1fr; border-top: 1px solid var(--line); }
 .dvLinks .mv { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: 1em; padding: 5px 2px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .dvLamp .lampShort, .hLamp .lampShort { display: none; }
+/* 一覧の MISS COUNT はスマホだけ MISS と略す（2026-11-21） */
+.missShort { display: none; }
+@media (max-width: 640px) { .missFull { display: none; } .missShort { display: inline; } }
 @media (max-width: 640px) {
   .dvLamp .lampFull, .dhist .hLamp .lampFull { display: none; }
   .dvLamp .lampShort, .dhist .hLamp .lampShort { display: inline; }
@@ -518,7 +532,10 @@ dialog .close { position: absolute; top: 8px; right: 10px; background: none; bor
   .item { grid-template-columns: 10px 30px minmax(0, 1fr) auto; gap: 0 8px; }
   .item .lv { font-size: 17px; }
   .item .title { font-size: 15px; }
-  .item .score { grid-template-columns: 8.5em; gap: 0; }
+  /* スコア欄を細く（8.5em → 5.6em、EX は 15px → 13px。MISS COUNT を MISS と略して幅を空け、地力表の札をレーダーの右に入れる。2026-11-21） */
+  .item .score { grid-template-columns: 5.6em; gap: 0; }
+  .item .score .ex { font-size: 13px; }
+  .item .score .lampFull { display: none; } .item .score .lampShort { display: inline; }
   .item .score > div:last-child { white-space: normal; }
   .grade { font-size: 15px; }
   #q { flex-basis: 100%; }
