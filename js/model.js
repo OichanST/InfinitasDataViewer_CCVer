@@ -302,23 +302,40 @@ IV.model = (() => {
 			}));
 	}
 
+	// 「次に狙う」の並べ方の重み（地力の低さ : プレー回数の少なさ）。2026-11-24 にユーザーと ST-R のデータで見比べて 2 : 1 に決めた
+	// （1 : 1 だと NO PLAY の地力 B・B+ が上位に多く上がってきた）
+	const CAND_WEIGHT_RANK = 2, CAND_WEIGHT_PLAYS = 1;
+
+	/** 候補の中での順位を 0〜1 の点にする（値が大きいほど 1 に近い。同じ値は平均の順位） */
+	function percentileScores(values) {
+		const n = values.length;
+		const sorted = [...values].sort((a, b) => a - b);
+		const first = new Map(), count = new Map();
+		sorted.forEach((v, i) => { if (!first.has(v)) first.set(v, i); count.set(v, (count.get(v) || 0) + 1); });
+		return values.map((v) => (n > 1 ? (first.get(v) + (count.get(v) - 1) / 2) / (n - 1) : 1));
+	}
+
 	/**
-	 * 地力表の「次に狙う」候補。遊んだことがあり、まだ目標（ノマゲ=CLEAR、ハード=HARD CLEAR）に届いていない譜面を、
-	 * 地力ランクの低い順（地力と個人差は同じランクなら混ぜる）、同じランクなら MISS COUNT の少ない順に並べる。
-	 * 「未定」の譜面と未プレイ（MISS COUNT が無いので比べられない）は入れない。
-	 * 戻り値: [{ c, tier }]
+	 * 地力表の「次に狙う」候補。まだ目標（ノマゲ=CLEAR、ハード=HARD CLEAR）に届いていない譜面（未プレイの NO PLAY も入れる。未解禁は入れない）を、
+	 * 「地力ランクの低さ」と「プレー回数の少なさ」を候補の中での順位の点（0〜1）にして 2 : 1 で平均し、高い順に並べる。
+	 * プレー回数の少ない譜面は「やっていないだけで、やれば取れるかもしれない」ので上げる（2026-11-24 ユーザー指定。NO PLAY は 0 回）。
+	 * 地力と個人差は同じランクなら同じに扱う。点が同じなら地力の低い順 → MISS COUNT の少ない順 → 曲名順。「未定」の譜面は入れない。
+	 * 戻り値: [{ c, tier, rank, plays, score }]
 	 */
 	function abilityCandidates(charts, mode) {
 		const col = mode === "hard" ? "HARD_TIER" : "NOMAGE_TIER";
 		const goal = LAMPS.indexOf(ABILITY_CAND_GOAL[mode] || ABILITY_CAND_GOAL.nomage);
 		const rankOf = (t) => { const m = /^(?:地力|個人差)([SABCDEF]\+?)$/.exec(t); return m ? ABILITY_RANKS.indexOf(m[1]) : -1; };
 		const miss = (c) => (c.miss == null ? Infinity : c.miss);
-		return charts
-			.filter((c) => c.ability && c.played && c.lampIdx < goal)
-			.map((c) => { const tier = String(c.ability[col] || "").trim(); return { c, tier, rank: rankOf(tier) }; })
-			.filter((x) => x.rank >= 0)
-			// ABILITY_RANKS は上（S+）から並んでいるので、番号が大きいほど低いランク
-			.sort((a, b) => b.rank - a.rank || miss(a.c) - miss(b.c) || collator.compare(sortTitle(a.c), sortTitle(b.c)));
+		const list = charts
+			.filter((c) => c.ability && c.open && c.lampIdx < goal)
+			.map((c) => { const tier = String(c.ability[col] || "").trim(); return { c, tier, rank: rankOf(tier), plays: Number(c.plays) || 0 }; })
+			.filter((x) => x.rank >= 0);
+		// ABILITY_RANKS は上（S+）から並んでいるので、番号が大きいほど低いランク（＝点が高い）。回数は少ないほど点が高い
+		const low = percentileScores(list.map((x) => x.rank));
+		const few = percentileScores(list.map((x) => -x.plays));
+		list.forEach((x, i) => { x.score = (CAND_WEIGHT_RANK * low[i] + CAND_WEIGHT_PLAYS * few[i]) / (CAND_WEIGHT_RANK + CAND_WEIGHT_PLAYS); });
+		return list.sort((a, b) => b.score - a.score || b.rank - a.rank || miss(a.c) - miss(b.c) || collator.compare(sortTitle(a.c), sortTitle(b.c)));
 	}
 
 	const RADAR_FIELDS = ["NOTES", "PEAK", "SCRATCH", "SOF-LAN", "CHARGE", "CHORD"];

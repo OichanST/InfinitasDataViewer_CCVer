@@ -467,9 +467,9 @@
 			<td class="abcPlay">${c.plays ? `<span class="abcN">${c.plays}</span><small>回</small><span class="muted">${esc(playDay(c.lastPlay))}</span>` : "-"}</td>
 		</tr>`).join("");
 		const more = list.length > n ? `<button type="button" class="abcMore">もっと見る（残り ${list.length - n}）</button>` : "";
-		return `<section class="abCand"><div class="prRecHead">次に狙う <span class="muted">（${esc(goal)} 未達成の譜面を、${head}地力の低い順・同じランクは MISS COUNT の少ない順に）</span></div>
+		return `<section class="abCand"><div class="prRecHead">次に狙う <span class="muted">（${esc(goal)} 未達成。${head}地力の低さ 2 : プレー回数の少なさ 1 で並べる）</span></div>
 			${list.length ? `<table class="prTable abcTable"><thead><tr><th>譜面</th><th>${head}地力</th><th>ランプ</th><th>MISS COUNT</th><th>PLAY</th></tr></thead><tbody>${rows}</tbody></table>${more}`
-				: `<p class="muted hNone">遊んだ譜面で ${esc(goal)} 未達成のものはありません</p>`}
+				: `<p class="muted hNone">${esc(goal)} 未達成の譜面はありません</p>`}
 		</section>`;
 	}
 	function renderAbility() {
