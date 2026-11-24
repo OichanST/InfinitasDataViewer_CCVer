@@ -602,7 +602,7 @@
 		let score = `<span class="lampname">${lampTxt}</span>`;
 		if (c.played) {
 			score = `
-				<div class="gradeBox"><div class="grade" style="--gc:var(--g-${c.grade})">${c.grade}</div><div class="rate gradeNext">${esc(c.gradeDetail)}</div></div>
+				<div class="gradeBox"><div class="grade" style="--gc:var(--g-${c.grade})">${c.grade}</div><div class="rate gradeNext">${esc(state.f.sort === "nextGrade" && c.nextGap != null && c.nextGrade !== "MAX" ?`${c.nextGrade}-${c.nextGap}` : c.gradeDetail)}</div></div>
 				<div><div class="ex">${c.ex}<small> /${c.notes * 2}</small></div>
 				<div class="rate">${(c.rate * 100).toFixed(2)}%</div>
 				${c.miss != null ? `<div class="rate"><span class="missFull">MISS COUNT</span><span class="missShort">MISS</span> ${c.miss}</div>` : ""}

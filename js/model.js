@@ -19,24 +19,25 @@ IV.model = (() => {
 	/**
 	 * DJ LEVEL と、次（または今）の境界との差。
 	 * 境界の中間（例: AA と AAA の間の 75/90）より上なら上の DJ LEVEL までの差（AAA-12）、下なら今の DJ LEVEL からの差（AA+8）。
+	 * next / nextGap は「次の DJ LEVEL」とそこまでの EX の差（一覧の「DJ LEVEL差順」で使う）。AAA の譜面は次を "MAX"（MAX までの差。理論値は 0）とする
 	 */
 	function grade(notes, ex) {
 		const max = notes * 2;
-		if (!notes || ex == null || isNaN(ex)) return { grade: "-", detail: "", rate: 0 };
+		if (!notes || ex == null || isNaN(ex)) return { grade: "-", detail: "", rate: 0, next: null, nextGap: null };
 		const rate = ex / max;
 		const border = (k) => Math.ceil(max * k / 9);
-		if (ex >= max) return { grade: "AAA", detail: "MAX+0", rate };
+		if (ex >= max) return { grade: "AAA", detail: "MAX+0", rate, next: "MAX", nextGap: 0 };
 		for (let k = 8; k >= 2; k--) {
 			if (rate >= k / 9) {
 				const g = GRADES[8 - k];
 				const upper = k === 8 ? "MAX" : GRADES[7 - k];
 				const upperScore = k === 8 ? max : border(k + 1);
 				const detail = rate >= (k + 0.5) / 9 ? `${upper}-${upperScore - ex}` : `${g}+${ex - border(k)}`;
-				return { grade: g, detail, rate };
+				return { grade: g, detail, rate, next: upper, nextGap: upperScore - ex };
 			}
 		}
 		const detail = ex > 0 ? `E-${border(2) - ex}` : "";
-		return { grade: "F", detail, rate };
+		return { grade: "F", detail, rate, next: "E", nextGap: border(2) - ex };
 	}
 
 	/** 譜面の BPM。music.tsv（2026-11-19〜）は譜面ごとに持つ。GAS の頃の customBPM（譜面ごとの例外）も読める */
@@ -108,7 +109,7 @@ IV.model = (() => {
 						bpm, bpmNum: bpmValue(bpm),
 						open, lamp, lampIdx: LAMPS.indexOf(lamp), played,
 						ex, miss: played && r.MISSCOUNT !== "" && r.MISSCOUNT != null && r.MISSCOUNT !== "-" ? Number(r.MISSCOUNT) : null,
-						grade: g.grade, gradeDetail: g.detail, rate: g.rate,
+						grade: g.grade, gradeDetail: g.detail, rate: g.rate, nextGrade: g.next || null, nextGap: g.nextGap ?? null,
 						// YouTube の動画（新しい順）。曲の詳細に出す
 						videos: r.VIDEOS || [],
 						// スコア CSV から読んだときだけ入る（GAS のリザルトには無い）
@@ -185,6 +186,14 @@ IV.model = (() => {
 				return (da ?? 1e9) - (db ?? 1e9);
 			},
 		}[by] || (() => 0);
+		// DJ LEVEL差順: 次に目指す DJ LEVEL の高い順（MAX → AAA → AA → … → E）、その中で差の少ない順（理論値 MAX+0 が先頭）。
+		// 降順はこの並びの逆。未プレイは昇順・降順どちらでも最後に回す
+		if (by === "nextGrade") {
+			const NEXT_ORDER = ["MAX", ...GRADES];
+			const none = (c) => c.nextGap == null;
+			const ng = (a, b) => NEXT_ORDER.indexOf(a.nextGrade) - NEXT_ORDER.indexOf(b.nextGrade) || a.nextGap - b.nextGap;
+			return list.slice().sort((a, b) => none(a) - none(b) || (none(a) ? 0 : sign * ng(a, b)) || byTitle(a, b));
+		}
 		return list.slice().sort((a, b) => sign * key(a, b) || byTitle(a, b));
 	}
 
