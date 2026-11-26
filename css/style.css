@@ -244,6 +244,12 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
   .abcTable .prTitle { grid-column: 1 / -1; max-width: none; width: auto; margin-bottom: 2px; }
   .abcTable td.num::before { content: "MISS "; color: var(--muted); font-size: 10px; }
   .abcTable .abcPlay { display: none; } /* スマホはあとで実機で調整（今は今までどおり出さない） */
+  /* スマホ: 見出しを押して開閉（2026-11-26。最初は閉じている） */
+  .abCand .abcHead { cursor: pointer; margin-bottom: 0; }
+  .abCand .abcHead::before { content: "▸"; display: inline-block; width: 12px; color: var(--muted); font-size: 11px; }
+  .abCand.open .abcHead { margin-bottom: 2px; }
+  .abCand.open .abcHead::before { content: "▾"; }
+  .abCand:not(.open) > :not(.abcHead) { display: none; }
 }
 #abTotal b { font: 16px var(--num); color: var(--text); }
 .abGroup { margin-top: 14px; }

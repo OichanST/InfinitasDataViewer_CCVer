@@ -325,7 +325,8 @@ IV.model = (() => {
 	}
 
 	/**
-	 * 地力表の「次に狙う」候補。まだ目標（ノマゲ=CLEAR、ハード=HARD CLEAR）に届いていない譜面（未プレイの NO PLAY も入れる。未解禁は入れない）を、
+	 * 地力表の「次に狙う」候補。まだ目標（ノマゲ=CLEAR、ハード=HARD CLEAR）に届いていない譜面（ノマゲは未プレイの NO PLAY も入れる。
+	 * ハードは NO PLAY・FAILED を入れない。未解禁は入れない）を、
 	 * 「地力ランクの低さ」と「プレー回数の少なさ」を候補の中での順位の点（0〜1）にして 2 : 1 で平均し、高い順に並べる。
 	 * プレー回数の少ない譜面は「やっていないだけで、やれば取れるかもしれない」ので上げる（2026-11-24 ユーザー指定。NO PLAY は 0 回）。
 	 * 地力と個人差は同じランクなら同じに扱う。点が同じなら地力の低い順 → MISS COUNT の少ない順 → 曲名順。「未定」の譜面は入れない。
@@ -334,10 +335,12 @@ IV.model = (() => {
 	function abilityCandidates(charts, mode) {
 		const col = mode === "hard" ? "HARD_TIER" : "NOMAGE_TIER";
 		const goal = LAMPS.indexOf(ABILITY_CAND_GOAL[mode] || ABILITY_CAND_GOAL.nomage);
+		// ハードは NO PLAY・FAILED を入れない（先にイージーかノマゲを取るのが先。2026-11-26 ユーザー指定。ASSIST CLEAR は残す）
+		const minLamp = mode === "hard" ? LAMPS.indexOf("ASSIST CLEAR") : 0;
 		const rankOf = (t) => { const m = /^(?:地力|個人差)([SABCDEF]\+?)$/.exec(t); return m ? ABILITY_RANKS.indexOf(m[1]) : -1; };
 		const miss = (c) => (c.miss == null ? Infinity : c.miss);
 		const list = charts
-			.filter((c) => c.ability && c.open && c.lampIdx < goal)
+			.filter((c) => c.ability && c.open && c.lampIdx < goal && c.lampIdx >= minLamp)
 			.map((c) => { const tier = String(c.ability[col] || "").trim(); return { c, tier, rank: rankOf(tier), plays: Number(c.plays) || 0 }; })
 			.filter((x) => x.rank >= 0);
 		// ABILITY_RANKS は上（S+）から並んでいるので、番号が大きいほど低いランク（＝点が高い）。回数は少ないほど点が高い
