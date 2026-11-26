@@ -1,7 +1,8 @@
 """譜面のノーツ密度（1 秒ごとのノーツ数）を textage の譜面から計算して data/density.tsv に書く（2026-11-26）。
 
-usage: python tools/make_density.py [--legg] [--music <music.tsv>] [--wait 2]
+usage: python tools/make_density.py [--legg] [--spa] [--music <music.tsv>] [--wait 2]
   --legg   LEGGENDARIA（SPL）がある曲だけ（最初の試し。textage は 1 曲 1 ページなので、その曲の SPN/SPH/SPA も一緒に作る）
+  --spa    ANOTHER（SPA）がある曲だけ（同じく、その曲のほかの難易度も一緒に作る）
 
 - 楽曲は music.tsv（既定は G: の同期フォルダの写し）。対象は SPN / SPH / SPA / SPL（DP と BEGINNER は作らない）
 - 譜面の読み取りは F:\\node\\InfinitasVideoTool\\playan\\textage_chart.py（RANDOM の並びの逆算と同じもの。直すのは 1 か所にしておく）
@@ -13,7 +14,7 @@ usage: python tools/make_density.py [--legg] [--music <music.tsv>] [--wait 2]
 
 出力 data/density.tsv: title / type / notes / avg / max / sec（1 秒ごとのノーツ数をカンマ区切り）
 """
-import argparse, html, math, os, re, sys, time, unicodedata, urllib.request
+import argparse, html, math, os, re, sys, time, unicodedata, urllib.error, urllib.request
 
 PLAYAN = r'F:\node\InfinitasVideoTool\playan'
 sys.path.insert(0, PLAYAN)
@@ -26,20 +27,41 @@ MUSIC = r'G:\マイドライブ\INFINITAS履歴\music.tsv'
 UA = {'User-Agent': 'Mozilla/5.0'}
 TYPES = ['SPN', 'SPH', 'SPA', 'SPL']
 # music.tsv の譜面 → textage_chart の難易度（L=NORMAL の欄、X=通常のページの中の LEGGENDARIA）
+# music.tsv と textage で曲名の文字が違う曲（2026-11-26。当てても、ノーツ数がぴったり合う譜面しか書かない）
+ALIAS = {
+    'ƒƒƒƒƒ': ['fffff'],
+    'uən': ['_uen'],                       # textage は u&#x4D9;n（キリル文字の ә）
+    'CODE:0': ['code_0'],                  # textage は CODE:&Oslash;
+    'POLꞰAMAИIA': ['plkmania'],            # textage は ꓘ（U+A4D8）。INFINITAS は Ʞ（U+A7B0）
+    'CROSSROAD ～Left Story～': ['crosroad'],
+}
 LABEL = {'SPN': 'L', 'SPH': 'H', 'SPA': 'A', 'SPL': 'X'}
 WAIT = 2.0
 fetched = 0
 
 
+tried = 0
+
+
 def fetch(url, path, max_age_days=None):
-    global fetched
+    global fetched, tried
     if os.path.exists(path) and (max_age_days is None or time.time() - os.path.getmtime(path) < max_age_days * 86400):
         return path
-    if fetched:
+    # 404 だったページは印（.404）を残して、次から取りに行かない（2026-11-26 SS の曲で毎回 404 を取りに行っていた）
+    if os.path.exists(path + '.404'):
+        raise FileNotFoundError('textage に無い（前回 404）')
+    # 取れなかったときも含めて、取りに行く前に必ず間をあける（2026-11-26 404 のときに待たずに続けて送っていた）
+    if tried:
         time.sleep(WAIT)
+    tried += 1
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        data = r.read()
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = r.read()
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            open(path + '.404', 'w').close()
+        raise
     with open(path, 'wb') as f:
         f.write(data)
     fetched += 1
@@ -49,8 +71,19 @@ def fetch(url, path, max_age_days=None):
 def norm_title(s):
     """表記ゆれを吸収した曲名（random_playlist.py と同じ。† も消えるので「曲名†」の別ページも同じ名前になる）"""
     s = re.sub(r'<[^>]*>', '', s)   # textage の曲名の改行 "<br>"（お米の美味しい炊き方、<br>そして…）
-    s = unicodedata.normalize('NFKC', html.unescape(s)).lower()
-    return ''.join(ch for ch in s if ch.isalnum())
+    # アクセント記号は外して比べる（textage は L'amour et la libert&eacute;、INFINITAS は liberte。2026-11-26）
+    # （外すのはラテン文字に付いた記号だけ。日本語の濁点・半濁点は残す）
+    d, out = unicodedata.normalize('NFKD', html.unescape(s)), []
+    for ch in d:
+        if unicodedata.combining(ch) and out and out[-1].isascii():
+            continue
+        out.append(ch)
+    s = unicodedata.normalize('NFC', ''.join(out))
+    s = unicodedata.normalize('NFKC', s).lower()
+    t = ''.join(ch for ch in s if ch.isalnum())
+    # 記号だけの曲名（∀、≡+≡）は記号を消すと空になり、ほかの記号だけの曲名や textage のダミー項目（__dmy__、曲名が全角スペース）と
+    # 同じになってしまう（2026-11-26、ダミーのページを取りに行って 404）。空になるときは空白以外をそのまま使う
+    return t or ('~' + ''.join(s.split()) if s.strip() else '')
 
 
 def textage_songs():
@@ -59,9 +92,12 @@ def textage_songs():
         p = fetch('https://textage.cc/score/%s.js' % name, os.path.join(CACHE, name + '.js'), max_age_days=7)
         t[name] = open(p, 'rb').read().decode('cp932', 'replace')
     songs = {}
-    for m in re.finditer(r"^'([^']+)'\s*:\s*\[(\d+),\d+,\d+,\"(?:[^\"\\]|\\.)*\"(?:/\*.*?\*/)?,\"(?:[^\"\\]|\\.)*\",\"((?:[^\"\\]|\\.)*)\"(?:,\"((?:[^\"\\]|\\.)*)\")?",
+    # バージョンの欄が数字でなく "SS"（一覧の先頭の "SS=35;"）の曲がある（THE EARTH LIGHT など。2026-11-26）
+    ss = re.search(r'\bSS\s*=\s*(\d+)', t['titletbl'])
+    for m in re.finditer(r"^'([^']+)'\s*:\s*\[(\d+|SS),\d+,\d+,\"(?:[^\"\\]|\\.)*\"(?:/\*.*?\*/)?,\"(?:[^\"\\]|\\.)*\",\"((?:[^\"\\]|\\.)*)\"(?:,\"((?:[^\"\\]|\\.)*)\")?",
                          t['titletbl'], re.M):
-        songs[m.group(1)] = {'ver': int(m.group(2)), 'title': m.group(3), 'sub': m.group(4) or ''}
+        ver = int(ss.group(1)) if m.group(2) == 'SS' and ss else int(m.group(2)) if m.group(2).isdigit() else 0
+        songs[m.group(1)] = {'ver': ver, 'title': m.group(3), 'sub': m.group(4) or ''}
     for m in re.finditer(r"^'([^']+)'\s*:\s*\[([^\]]*)\]", t['datatbl'], re.M):
         if m.group(1) in songs:
             v = [x.strip() for x in m.group(2).split(',')]
@@ -105,8 +141,14 @@ def density(notes):
 
 def main():
     global WAIT
+    # 画面の文字コード（cp932）で出せない曲名（ƒƒƒƒƒ など）があっても止まらないように（2026-11-26 一覧の表示で止まった）
+    try:
+        sys.stdout.reconfigure(errors='replace')
+    except AttributeError:
+        pass
     ap = argparse.ArgumentParser()
     ap.add_argument('--legg', action='store_true', help='LEGGENDARIA のある曲だけ')
+    ap.add_argument('--spa', action='store_true', help='ANOTHER のある曲だけ')
     ap.add_argument('--music', default=MUSIC)
     ap.add_argument('--wait', type=float, default=WAIT)
     a = ap.parse_args()
@@ -115,10 +157,12 @@ def main():
     music = read_music(a.music)
     if a.legg:
         music = [m for m in music if 'SPL' in m[1]]
+    if a.spa:
+        music = [m for m in music if 'SPA' in m[1]]
     rows, missing = {}, []
     t0 = time.time()
     for i, (title, charts) in enumerate(music, 1):
-        keys = list(by_name.get(norm_title(title), []))
+        keys = list(by_name.get(norm_title(title), [])) or [k for k in ALIAS.get(title, []) if k in songs]
         if not keys:
             missing.extend((title, t, 'textage に曲がない') for t in charts)
             continue
@@ -151,6 +195,8 @@ def main():
         for t, want in charts.items():
             # まず決まった欄、だめなら（† の別ページなど）ほかの欄も見て、ノーツ数がぴったり合うものを使う
             tries = [(main, LABEL[t])] if main in pages else []
+            # 同じ曲名の版違いのページ（thunder・wish など。INFINITAS と本体の版が違う）も同じ欄を試す（2026-11-26）
+            tries += [(k, LABEL[t]) for k in pages if k != main]
             if t == 'SPL':
                 tries += [(k, lab) for k in pages if k != main for lab in ('A', 'X', 'H', 'L')]
             got, errs = None, []

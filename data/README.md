@@ -17,3 +17,8 @@
 - `ノマゲ帯` / `ハード帯` は `地力S+`〜`地力F`、`個人差S+`〜`個人差F`、`未定` のいずれか
 - `曲名` は INFINITAS の曲名に合わせる。LEGGENDARIA は末尾に `(L)`、HYPER は `(H)` を付ける（例: `HYENA(L)`、`gigadelic(H)`）。何も付けなければ ANOTHER
 - 地力表に無い曲を追加するときは、1行増やせばよい
+
+# ノーツ密度（`density.tsv`）
+
+詳細画面の NOTES DENSITY（1 秒ごとのノーツ数のグラフ）のデータ。手で編集しない。
+家の PC で `python tools/make_density.py`（`--legg` で LEGGENDARIA のある曲だけ）を実行すると textage の譜面から作り直すので、コミットして main にプッシュする。
