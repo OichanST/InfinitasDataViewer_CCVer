@@ -157,6 +157,9 @@
 			.catch((e) => console.warn("ノーツレーダーの読み込みに失敗しました", e)));
 		tasks.push(IV.api.loadAbility((data) => { state.abilityMap = M.abilityMap(data); redraw(); }, { force })
 			.catch((e) => console.warn("地力表の読み込みに失敗しました", e)));
+		// ノーツ密度（詳細画面のグラフだけで使うので、読めても再描画はしない）
+		tasks.push(IV.api.loadDensity((data) => { state.densityMap = new Map(data.map((r) => [r.TITLE + "|" + r.TYPE, r])); }, { force })
+			.catch((e) => console.warn("ノーツ密度の読み込みに失敗しました", e)));
 		if (!state.guest) {
 			const id = state.id;
 			// スコア CSV（ドライブの latest.csv）
@@ -777,6 +780,49 @@
 		return `<div class="drival"><div class="radarCaption muted">RIVAL</div><div style="overflow-x:auto"><table class="dtable">
 			<thead><tr><th>DJ NAME</th><th class="rvRes">WIN/LOSE</th><th class="hLamp">ランプ</th><th>EX SCORE</th><th>差</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 	}
+	/**
+	 * 詳細画面の下の「NOTES DENSITY」欄（2026-11-26）。ゲームのリザルトの Digitank System と同じ形：
+	 * 1 秒ごとのノーツ数の折れ線（平均より上は水色、下はオレンジ）、平均の黄色い線、右に平均ノーツと瞬間最大密度。
+	 * データは data/density.tsv（textage の譜面から計算。1 秒の区切りは譜面の頭から＝ゲームと同じ。
+	 * 平均は最初から最後のノーツまでの秒数で割る＝ゲームより少し高い）。データの無い譜面とスマホでは出さない
+	 */
+	function densityHtml(c) {
+		const d = state.densityMap && state.densityMap.get(c.title + "|" + c.key);
+		if (!d) return "";
+		const bins = String(d.SEC).split(",").map(Number);
+		const avg = Number(d.AVG), max = Number(d.MAX);
+		const W = 600, H = 190, L = 26, R = 8, T = 10, B = 20;
+		const top = Math.max(20, Math.ceil((max + 1) / 5) * 5);
+		const sx = (i) => L + (i * (W - L - R)) / Math.max(1, bins.length - 1);
+		const sy = (v) => H - B - (v * (H - B - T)) / top;
+		const out = [];
+		for (let v = 0; v <= top; v += 5) {
+			out.push(`<line class="ddGrid" x1="${L}" x2="${W - R}" y1="${sy(v).toFixed(1)}" y2="${sy(v).toFixed(1)}"/><text class="ddAxis" x="${L - 5}" y="${(sy(v) + 4).toFixed(1)}" text-anchor="end">${v}</text>`);
+		}
+		for (let i = 0; i < bins.length; i += 30) {
+			out.push(`<text class="ddAxis" x="${sx(i).toFixed(1)}" y="${H - 5}" text-anchor="middle">${i}秒</text>`);
+		}
+		// 平均の線をまたぐところで線を分けて、平均より上は水色、下はオレンジ
+		const seg = (x1, y1, x2, y2) => `<line class="${(y1 + y2) / 2 >= avg ? "ddHi" : "ddLo"}" x1="${sx(x1).toFixed(1)}" y1="${sy(y1).toFixed(1)}" x2="${sx(x2).toFixed(1)}" y2="${sy(y2).toFixed(1)}"/>`;
+		for (let i = 0; i < bins.length - 1; i++) {
+			const a = bins[i], b = bins[i + 1];
+			if ((a - avg) * (b - avg) < 0) {
+				const x = i + (avg - a) / (b - a);
+				out.push(seg(i, a, x, avg), seg(x, avg, i + 1, b));
+			} else out.push(seg(i, a, i + 1, b));
+		}
+		out.push(`<line class="ddAvg" x1="${L}" x2="${W - R}" y1="${sy(avg).toFixed(1)}" y2="${sy(avg).toFixed(1)}"/>`);
+		return `<div class="ddens"><div class="radarCaption muted">NOTES DENSITY</div>
+			<div class="ddensBody">
+				<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="1 秒ごとのノーツ数">${out.join("")}</svg>
+				<div class="ddensNums">
+					<div><span>平均ノーツ<small>(notes/sec)</small></span><b>${avg.toFixed(2).padStart(5, "0")}</b></div>
+					<div><span>瞬間最大密度<small>(notes/sec)</small></span><b>${max}</b></div>
+				</div>
+			</div>
+		</div>`;
+	}
+
 	function openDetail(id) {
 		const c = state.charts.find((x) => x.id === id);
 		if (!c) return;
@@ -804,6 +850,7 @@
 					<div class="dchartSub"><span><b>${c.notes}</b> NOTES</span></div>
 				</div>
 			</div>
+			${densityHtml(c)}
 			<div class="dbody">
 			<div class="dleft">${radarHtml(c)}</div>
 			<div class="dright">

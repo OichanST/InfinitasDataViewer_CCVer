@@ -184,6 +184,23 @@ IV.api = (() => {
 	}
 
 
+	/**
+	 * ノーツ密度（1 秒ごとのノーツ数）。このリポジトリの data/density.tsv（tools/make_density.py が textage の譜面から作る。2026-11-26〜）。
+	 * [{ TITLE, TYPE, NOTES, AVG, MAX, SEC }]（SEC は 1 秒ごとの数のカンマ区切りの文字列のまま。詳細を開いたときに分ける）
+	 */
+	async function getDensity() {
+		const path = "data/density.tsv";
+		const url = /^https?:$/.test(location.protocol) ? path : "https://oichanst.github.io/InfinitasDataViewer_CCVer/" + path;
+		const res = await fetch(url, { cache: "no-cache" });
+		if (!res.ok) throw new Error(`ノーツ密度の取得に失敗しました（HTTP ${res.status}）`);
+		const [head, ...lines] = (await res.text()).split(/\r?\n/).filter((l) => l.trim());
+		const col = Object.fromEntries(head.split("\t").map((h, i) => [h, i]));
+		return lines.map((l) => {
+			const c = l.split("\t");
+			return { TITLE: c[col.title], TYPE: c[col.type], NOTES: c[col.notes], AVG: c[col.avg], MAX: c[col.max], SEC: c[col.sec] };
+		});
+	}
+
 	/** 小さな設定（絞り込み条件・ライバル一覧・前回の DJ NAME）は localStorage に置く（起動時にすぐ読みたいので同期で読める方） */
 	const cache = {
 		read(key) {
@@ -286,6 +303,7 @@ IV.api = (() => {
 		/** onData には GAS の頃と同じ配列を渡す */
 		loadRadar: (onData, opts) => load("driveradar", getRadar, (d, info) => onData(d.list, info), opts),
 		loadAbility: (onData, opts) => load("sp12table", getAbility, onData, opts),
+		loadDensity: (onData, opts) => load("density", getDensity, onData, opts),
 		loadHistory: (id, onData, opts) => load("history:" + id, () => getHistory(id), onData, opts),
 		loadDriveCsv: (id, onData, opts) => load("drivecsv:" + id, () => getDriveCsv(id), onData, opts),
 		/** YouTube のアップロード動画。↻（force）のときは全部取り直す */
