@@ -388,6 +388,9 @@ i.hcLamp { background: var(--h-lamp); } i.hcEx { background: var(--h-ex); }
 .densVals .rl { font-size: 9px; letter-spacing: .04em; }
 .densVals .rv { color: var(--text); font-size: 12px; justify-content: flex-end; margin-top: 0; } /* 数値は右寄せ（.rv はライバル欄の指定で flex になっているので justify-content で寄せる）（列の幅を全行で同じにして、行をまたいで桁がそろうように）。項目名は左寄せのまま */
 @media (max-width: 640px) { .densBox { display: none; } }
+/* 地力の札が無い譜面も、札の幅を空けて NOTES DENSITY 枠の位置をほかの行とそろえる（PC のみ。スマホは枠を出さないので空けない） */
+.abilityRow.abEmpty { width: 6.4em; font-size: 10px; }
+@media (max-width: 640px) { .abilityRow.abEmpty { display: none; } }
 .tag.tier-Sp { color: #ff3b3b; border: 1px solid #ff3b3b; }
 .tag.tier-S { color: #ff8a3d; border: 1px solid #ff8a3d; }
 .tag.tier-Ap { color: #ffd400; border: 1px solid #ffd400; }

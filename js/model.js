@@ -75,10 +75,11 @@ IV.model = (() => {
 	/**
 	 * 一覧を作る。results は自分のリザルト（なければ null）、rivals は { id, results } の配列。
 	 */
-	function build(music, results, rivals, radarMap, abilityMap) {
+	function build(music, results, rivals, radarMap, abilityMap, densityMap) {
 		const resByTitle = new Map((results || []).map((r) => [r.TITLE, r]));
 		radarMap = radarMap || new Map();
 		abilityMap = abilityMap || new Map();
+		densityMap = densityMap || new Map();
 		const rivalMaps = (rivals || []).map((rv) => ({ id: rv.id, map: new Map((rv.results || []).map((r) => [r.TITLE, r])) }));
 		const charts = [];
 		for (const song of music.musicList) {
@@ -116,6 +117,8 @@ IV.model = (() => {
 						plays: r.PLAYS ?? null, lastPlay: r.LASTPLAY || "",
 						searchText,
 						radar: radarMap.get(song.TITLE + "|" + key) || null,
+						// ノーツ密度（data/density.tsv の行 { AVG, MAX, ... }。一覧の NOTES DENSITY 枠と並び替えで使う）
+						density: densityMap.get(song.TITLE + "|" + key) || null,
 						ability: abilityMap.get(song.TITLE + "|" + key) || abilityMap.get("~" + looseTitle(song.TITLE) + "|" + key) || null,
 						rivals: [],
 					};
@@ -188,6 +191,13 @@ IV.model = (() => {
 		}[by] || (() => 0);
 		// DJ LEVEL差順: 次に目指す DJ LEVEL の高い順（MAX → AAA → AA → … → E）、その中で差の少ない順（理論値 MAX+0 が先頭）。
 		// 降順はこの並びの逆。未プレイは昇順・降順どちらでも最後に回す
+		// 平均ノーツ順・瞬間最大密度順: 密度データの無い譜面（DP など）は昇順・降順どちらでも最後に回す（2026-11-27）
+		if (by === "densAvg" || by === "densMax") {
+			const field = by === "densAvg" ? "AVG" : "MAX";
+			const none = (c) => !c.density;
+			const dv = (c) => Number(c.density[field]) || 0;
+			return list.slice().sort((a, b) => none(a) - none(b) || (none(a) ? 0 : sign * (dv(a) - dv(b))) || byTitle(a, b));
+		}
 		if (by === "nextGrade") {
 			const NEXT_ORDER = ["MAX", ...GRADES];
 			const none = (c) => c.nextGap == null;

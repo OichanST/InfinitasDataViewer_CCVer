@@ -136,7 +136,7 @@
 		if (!state.music) return;
 		const mine = state.guest || !state.csv ? null : csvResults(state.csv.csv);
 		const rivals = state.rivals.map((rv) => ({ id: rv.id, results: rv.csv ? M.applyScoreCsv(state.music, null, rv.csv).results : null }));
-		state.charts = M.build(state.music, mine, rivals, state.radarMap, state.abilityMap);
+		state.charts = M.build(state.music, mine, rivals, state.radarMap, state.abilityMap, state.densityMap);
 		$("#version").textContent = state.music.version ? `DATA ${state.music.version}` : "";
 		apply();
 	}
@@ -596,7 +596,7 @@
 	}
 	/** 一覧の地力タグの右に出す「NOTES DENSITY」枠（平均ノーツ AVE・瞬間最大密度 MAX。PC のみ、スマホは CSS で隠す。2026-11-27） */
 	function densityMiniHtml(c) {
-		const d = state.densityMap && state.densityMap.get(c.title + "|" + c.key);
+		const d = c.density;
 		if (!d) return "";
 		return `<div class="densBox num"><div class="densCap">NOTES DENSITY</div><div class="densVals">
 			<span class="ri"><span class="rl">AVE</span><span class="rv">${Number(d.AVG).toFixed(2)}</span></span>
@@ -627,7 +627,7 @@
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
 				<div class="sub"><span><b>${esc(c.bpm)}</b> BPM</span><span><b>${c.notes}</b> NOTES</span></div>
-				${radarMiniHtml(c, abilityHtml(c) + densityMiniHtml(c))}
+				${radarMiniHtml(c, (abilityHtml(c) || (c.density ? `<div class="abilityRow abEmpty"></div>` : "")) + densityMiniHtml(c))}
 			</div>
 			<div class="score">${score}</div>
 		</article>`;
@@ -675,6 +675,9 @@
 		// ライバル（並べ替えの「ライバルとの差順」とライバルの選択はライバルタブだけ）
 		const hasRival = state.rivals.length > 0;
 		$("#sort").querySelector('[value="rival"]').hidden = !(hasRival && f.view === "rival");
+		// 平均ノーツ順・瞬間最大密度順はスマホでは隠す（スマホの一覧には NOTES DENSITY 枠を出さないので。2026-11-27）
+		const mobile = window.matchMedia("(max-width: 640px)").matches;
+		for (const v of ["densAvg", "densMax"]) $("#sort").querySelector(`[value="${v}"]`).hidden = mobile;
 		const rsel = $("#rivalSel");
 		const opts = state.rivals.map((r) => `<option>${esc(r.id)}</option>`).join("");
 		if (rsel.innerHTML !== opts) rsel.innerHTML = opts;
@@ -1071,6 +1074,7 @@
 		};
 		placeTabs();
 		pc.addEventListener("change", placeTabs);
+		pc.addEventListener("change", () => renderControls());
 	}
 
 	// 起動
