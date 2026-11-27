@@ -157,8 +157,8 @@
 			.catch((e) => console.warn("ノーツレーダーの読み込みに失敗しました", e)));
 		tasks.push(IV.api.loadAbility((data) => { state.abilityMap = M.abilityMap(data); redraw(); }, { force })
 			.catch((e) => console.warn("地力表の読み込みに失敗しました", e)));
-		// ノーツ密度（詳細画面のグラフだけで使うので、読めても再描画はしない）
-		tasks.push(IV.api.loadDensity((data) => { state.densityMap = new Map(data.map((r) => [r.TITLE + "|" + r.TYPE, r])); }, { force })
+		// ノーツ密度（詳細画面のグラフと、一覧の NOTES DENSITY 枠（PC のみ）で使う）
+		tasks.push(IV.api.loadDensity((data) => { state.densityMap = new Map(data.map((r) => [r.TITLE + "|" + r.TYPE, r])); redraw(); }, { force })
 			.catch((e) => console.warn("ノーツ密度の読み込みに失敗しました", e)));
 		if (!state.guest) {
 			const id = state.id;
@@ -594,6 +594,14 @@
 		const tag = (label, title, tier) => tier ? `<span class="tag tier-${tierClass(tier)}" title="${esc(title)} ${esc(tier)}">${esc(label)}${esc(tier)}</span>` : "";
 		return `<div class="abilityRow">${tag("N", "ノマゲ", nomage)}${tag("H", "ハード", hard)}</div>`;
 	}
+	/** 一覧の地力タグの右に出す「NOTES DENSITY」枠（平均ノーツ AVE・瞬間最大密度 MAX。PC のみ、スマホは CSS で隠す。2026-11-27） */
+	function densityMiniHtml(c) {
+		const d = state.densityMap && state.densityMap.get(c.title + "|" + c.key);
+		if (!d) return "";
+		return `<div class="densBox num"><div class="densCap">NOTES DENSITY</div><div class="densVals">
+			<span class="ri"><span class="rl">AVE</span><span class="rv">${Number(d.AVG).toFixed(2)}</span></span>
+			<span class="ri"><span class="rl">MAX</span><span class="rv">${Number(d.MAX)}</span></span></div></div>`;
+	}
 	/** ライバルとの勝敗（w=勝ち l=負け d=同点、自分が未プレイなら ""）と表示名 */
 	const rivalCls = (r) => r.diff == null ? "" : r.diff > 0 ? "w" : r.diff < 0 ? "l" : "d";
 	const RIVAL_RESULT = { w: "WIN", l: "LOSE", d: "EVEN" };
@@ -619,7 +627,7 @@
 			<div class="main">
 				<div class="title">${esc(c.title)}</div>
 				<div class="sub"><span><b>${esc(c.bpm)}</b> BPM</span><span><b>${c.notes}</b> NOTES</span></div>
-				${radarMiniHtml(c, abilityHtml(c))}
+				${radarMiniHtml(c, abilityHtml(c) + densityMiniHtml(c))}
 			</div>
 			<div class="score">${score}</div>
 		</article>`;
